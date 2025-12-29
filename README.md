@@ -1,6 +1,6 @@
 # Vue3 MapTiler GL
 
-[![npm](https://img.shields.io/npm/v/vue3-mapTiler-gl)](https://www.npmjs.com/package/vue3-mapTiler-gl) [![Downloads](https://img.shields.io/npm/dt/vue3-mapTiler-gl)](https://www.npmjs.com/package/vue3-mapTiler-gl) [![Stars](https://img.shields.io/github/stars/danh121097/vue-mapTiler-gl?style=flat-square)](https://github.com/danh121097/vue-mapTiler-gl/stargazers) [![License](https://img.shields.io/npm/l/vue3-mapTiler-gl)](https://github.com/danh121097/vue-mapTiler-gl/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Downloads](https://img.shields.io/npm/dt/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Stars](https://img.shields.io/github/stars/danh121097/vue-mapTiler-gl?style=flat-square)](https://github.com/danh121097/vue-mapTiler-gl/stargazers) [![License](https://img.shields.io/npm/l/vue3-maptiler-gl)](https://github.com/danh121097/vue-mapTiler-gl/blob/main/LICENSE)
 
 > **The most comprehensive Vue 3 library for MapTiler GL JS** - Build interactive maps with 10+ components and 15+ composables
 
@@ -22,7 +22,7 @@ A powerful, feature-rich Vue 3 component library that provides an intuitive, rea
 ### Using Yarn (Recommended)
 
 ```bash
-yarn add vue3-mapTiler-gl
+yarn add vue3-maptiler-gl
 ```
 
 ### Using npm
@@ -34,7 +34,7 @@ npm install vue3-maptiler-gl
 ### Using pnpm
 
 ```bash
-pnpm add vue3-mapTiler-gl
+pnpm add vue3-maptiler-gl
 ```
 
 ## 🚀 Quick Start

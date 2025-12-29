@@ -243,7 +243,7 @@ A component for rendering filled polygons from a data source. Supports all MapTi
 
 <script setup>
 import { ref } from 'vue';
-import { MapTiler, GeoJsonSource, FillLayer } from 'vue3-mapTiler-gl';
+import { MapTiler, GeoJsonSource, FillLayer } from 'vue3-maptiler-gl';
 
 const fillStyle = ref({
   'fill-color': [
