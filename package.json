@@ -1,7 +1,7 @@
 {
   "name": "vue3-maptiler-gl",
   "description": "Vue 3 components and composables for MapTiler GL JS - Build interactive maps with ease",
-  "version": "1.0.0-beta",
+  "version": "1.0.0",
   "author": {
     "name": "Danh Nguyen"
   },
@@ -109,8 +109,7 @@
     "vue": "^3.5.17",
     "vue-eslint-parser": "^9.4.3",
     "vue-router": "^4.3.2",
-    "vue-tsc": "^2.0.19",
-    "vue3-maptiler-gl": "^1.0.0"
+    "vue-tsc": "^2.0.19"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,cjs,mjs,vue}": "eslint --fix",
