@@ -116,6 +116,6 @@
     "*.{ts,tsx,js,jsx,cjs,mjs,css,scss,less,md,vue}": "prettier --write"
   },
   "dependencies": {
-    "vue3-maptiler-gl": "^1.0.0"
+    "vue3-maptiler-gl": "^1.0.1"
   }
 }

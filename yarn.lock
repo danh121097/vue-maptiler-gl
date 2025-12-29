@@ -3217,6 +3217,13 @@ vue3-maptiler-gl@^1.0.0:
   resolved "https://registry.yarnpkg.com/vue3-maptiler-gl/-/vue3-maptiler-gl-1.0.0.tgz#ad5280c67bb2d92d754088331c9cf2bf29d96041"
   integrity sha512-n0DkjLCBvJp+Zuqbvv3+VBhwVBtq6/Nj2prDzqjeG3lmDOuArws+5XjbckTunwFxlZWMCZy6Qt0y2LYQMAxG5Q==
 
+vue3-maptiler-gl@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/vue3-maptiler-gl/-/vue3-maptiler-gl-1.0.1.tgz#b7383fd6a25abdbb502579cd72f019c5dbd10788"
+  integrity sha512-cXNmOPa1lZnUimNT/qjO1P4DB3EtWeiBXoXJPCi6C83H5zdYUgZ8y6A5o47SKWEL0BT+DfhzMsrzuev6cs/dhA==
+  dependencies:
+    vue3-maptiler-gl "^1.0.0"
+
 vue@^3.5.13, vue@^3.5.17:
   version "3.5.26"
   resolved "https://registry.yarnpkg.com/vue/-/vue-3.5.26.tgz#03a0b17311e0e593d34b9358fa249b85e3a6d9fb"
