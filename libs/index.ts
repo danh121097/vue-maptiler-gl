@@ -63,7 +63,7 @@ export type {
   MapSourceDataEvent,
   MapContextEvent,
   MapDataEvent,
-  MapTilerZoomEvent,
+  MapLibreZoomEvent as MapTilerZoomEvent,
 
   // ===== FEATURE TYPES =====
   MapGeoJSONFeature,
