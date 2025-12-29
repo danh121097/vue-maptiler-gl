@@ -1,0 +1,119 @@
+{
+  "name": "vue3-maptiler-gl",
+  "description": "Vue 3 components and composables for MapTiler GL JS - Build interactive maps with ease",
+  "version": "1.0.0",
+  "author": {
+    "name": "Danh Nguyen"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danh121097/vue-maptiler-gl.git"
+  },
+  "homepage": "https://github.com/danh121097/vue-maptiler-gl#readme",
+  "type": "module",
+  "keywords": [
+    "vue",
+    "vue3",
+    "maptiler",
+    "maptiler-gl",
+    "maps",
+    "typescript",
+    "components",
+    "composables",
+    "interactive-maps"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "module": "./dist/index.js",
+  "main": "./dist/index.umd.cjs",
+  "types": "./dist/index.d.ts",
+  "style": "./dist/style.css",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.umd.cjs",
+      "default": "./dist/index.js"
+    },
+    "./style.css": {
+      "default": "./dist/style.css"
+    },
+    "./dist/style.css": {
+      "default": "./dist/style.css"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "import": "./dist/components/index.js",
+      "default": "./dist/components/index.js"
+    },
+    "./composables": {
+      "types": "./dist/composables/index.d.ts",
+      "import": "./dist/composables/index.js",
+      "default": "./dist/composables/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": [
+    "*.css",
+    "*.vue"
+  ],
+  "scripts": {
+    "dev": "cd examples && vite --port 8080",
+    "build": "yarn clean && vite build",
+    "clean": "rm -rf dist",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
+    "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
+    "format": "prettier --write \"./**/*.{html,vue,ts,js,json,md}\"",
+    "format:check": "prettier --check \"./**/*.{html,vue,ts,js,json,md}\"",
+    "type-check": "vue-tsc --noEmit",
+    "test:build": "yarn build && yarn pack --dry-run",
+    "prepublishOnly": "yarn lint:check && yarn type-check && yarn build",
+    "deploy": "yarn build && yarn publish",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "devDependencies": {
+    "@maptiler/sdk": "^3.9.0",
+    "@turf/bbox": "^7.0.0",
+    "@turf/circle": "^7.0.0",
+    "@turf/helpers": "^7.0.0",
+    "@types/geojson": "^7946.0.14",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-unused-imports": "^4.0.0",
+    "eslint-plugin-vue": "^9.26.0",
+    "nanoid": "^5.0.7",
+    "prettier": "^3.3.1",
+    "sass": "^1.77.4",
+    "terser": "^5.43.1",
+    "tsc-alias": "^1.8.10",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.12",
+    "vite-plugin-dts": "^3.9.1",
+    "vite-plugin-eslint": "^1.8.1",
+    "vite-tsconfig-paths": "^4.3.2",
+    "vitepress": "^1.0.0-rc.44",
+    "vue": "^3.5.17",
+    "vue-eslint-parser": "^9.4.3",
+    "vue-router": "^4.3.2",
+    "vue-tsc": "^2.0.19",
+    "vue3-maptiler-gl": "^1.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,cjs,mjs,vue}": "eslint --fix",
+    "*.{ts,tsx,js,jsx,cjs,mjs,css,scss,less,md,vue}": "prettier --write"
+  }
+}
