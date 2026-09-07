@@ -25,7 +25,7 @@ interface GeolocateControlActions {
 }
 
 /**
- * Composable for managing MapTiler GL Geolocate Control
+ * Composable for managing MapTiler SDK Geolocate Control
  * Provides reactive geolocate control with error handling and lifecycle management
  *
  * @param props - Configuration options for the geolocate control

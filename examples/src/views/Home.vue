@@ -13,7 +13,10 @@ import '@maptiler/sdk/dist/maptiler-sdk.css';
 
 const options = computed<MapOptions>(() => ({
   container: 'map',
-  style: 'https://worldwidemaps.sqkii.com/api/maps/test/style.json',
+  // OpenFreeMap: a free, keyless, public style. Deliberately not a MapTiler
+  // Cloud style, so this demo runs with no account and no API key. Set
+  // `config.apiKey` and pass e.g. 'streets-v2' to use MapTiler Cloud.
+  style: 'https://tiles.openfreemap.org/styles/liberty',
   center: [103.8198, 1.3521],
   zoom: 12,
   minZoom: 9,

@@ -1,7 +1,21 @@
 <script lang="ts" setup>
-import { inject, ref, useSlots, watch, computed, shallowRef } from 'vue';
+import {
+  inject,
+  ref,
+  useSlots,
+  useAttrs,
+  watch,
+  watchEffect,
+  computed,
+  shallowRef,
+} from 'vue';
 import { MapProvideKey } from '@libs/enums';
 import { useCreateMarker } from '@libs/composables';
+import { isBrowser, normalizeClassTokens } from '@libs/helpers';
+
+// The Teleport root can't inherit fallthrough attributes; we forward `class`
+// onto the detached element MapTiler positions (see below) instead.
+defineOptions({ inheritAttrs: false });
 import type { Anchor } from '@libs/types';
 import type {
   LngLatLike,
@@ -13,7 +27,7 @@ import type {
 
 /**
  * Props interface for Marker component
- * Defines all configurable properties for a MapTiler GL Marker
+ * Defines all configurable properties for a MapTiler SDK Marker
  */
 interface MarkerProps {
   /** Geographic coordinates for the marker */
@@ -77,6 +91,36 @@ const markerElRef = ref<HTMLElement>();
 // Computed properties for better performance
 const hasCustomElement = computed(() => Boolean(slots.default?.()));
 
+// Give MapTiler a DETACHED element to own. MapTiler's Marker.addTo() appends
+// its element into the map's canvas container, physically relocating it out of
+// wherever it was mounted. If that element were a node in this component's
+// template flow, Vue would keep using it as a sibling anchor for fragment/list
+// patching and later call parent.insertBefore(newNode, relocatedNode) — which
+// throws "NotFoundError: ... insertBefore ... not a child of this node" once a
+// parent re-renders its marker list. Teleporting the slot into a detached div
+// (below) leaves only a stable comment anchor in the template flow, so Vue never
+// anchors against a node MapTiler has moved.
+if (hasCustomElement.value && isBrowser) {
+  markerElRef.value = document.createElement('div');
+}
+
+// Forward the fallthrough `class` onto the detached element (additively, so
+// MapTiler's own `maptilersdk-marker` class is preserved). Without this, classes
+// like z-index utilities passed to <Marker class="..."> would be dropped because
+// the Teleport root has no element to inherit them.
+const attrs = useAttrs();
+let forwardedClasses: string[] = [];
+watchEffect(() => {
+  const el = markerElRef.value;
+  if (!el) return;
+  const nextClasses: string[] = normalizeClassTokens(attrs.class);
+  forwardedClasses
+    .filter((token) => !nextClasses.includes(token))
+    .forEach((token) => el.classList.remove(token));
+  nextClasses.forEach((token) => el.classList.add(token));
+  forwardedClasses = nextClasses;
+});
+
 const markerOptions = computed(() => ({
   ...props.options,
   ...(props.draggable !== undefined && { draggable: props.draggable }),
@@ -122,7 +166,8 @@ const { setDraggable, setLngLat } = useCreateMarker({
   on: eventHandlers,
 });
 
-// Reactive watchers for prop changes with error handling
+// Reference watch: pass a new coordinate value to move the marker. Mutating
+// the existing `lnglat` array or object in place no longer triggers an update.
 watch(
   () => props.lnglat,
   (newLnglat) => {
@@ -130,7 +175,6 @@ watch(
       setLngLat(newLnglat);
     }
   },
-  { deep: true },
 );
 
 watch(
@@ -143,7 +187,7 @@ watch(
 );
 </script>
 <template>
-  <div ref="markerElRef">
+  <Teleport v-if="markerElRef" :to="markerElRef">
     <slot />
-  </div>
+  </Teleport>
 </template>

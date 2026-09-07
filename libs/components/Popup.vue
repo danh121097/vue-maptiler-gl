@@ -1,12 +1,26 @@
 <script lang="ts" setup>
-import { inject, ref, watch, computed, shallowRef } from 'vue';
+import {
+  inject,
+  ref,
+  useSlots,
+  useAttrs,
+  watch,
+  watchEffect,
+  computed,
+  shallowRef,
+} from 'vue';
 import { MapProvideKey } from '@libs/enums';
 import { useCreatePopup } from '@libs/composables';
+import { isBrowser, normalizeClassTokens } from '@libs/helpers';
 import type { LngLatLike, PopupOptions } from '@maptiler/sdk';
+
+// The Teleport root can't inherit fallthrough attributes; we forward `class`
+// onto the detached content element instead (see below).
+defineOptions({ inheritAttrs: false });
 
 /**
  * Props interface for Popup component
- * Defines all configurable properties for a MapTiler GL Popup
+ * Defines all configurable properties for a MapTiler SDK Popup
  */
 interface PopupProps {
   /** CSS class name for the popup */
@@ -56,9 +70,34 @@ const props = withDefaults(defineProps<Partial<PopupProps>>(), {
 // Component events
 const emits = defineEmits<Emits>();
 
+// Slots for custom popup content
+const slots = useSlots();
+
 // Injected dependencies
 const mapInstance = inject(MapProvideKey, shallowRef(null));
 const popupElRef = ref<HTMLElement>();
+
+if (Boolean(slots.default?.()) && isBrowser) {
+  const contentEl = document.createElement('div');
+  contentEl.className = 'maptilersdk-popup-content-inner';
+  popupElRef.value = contentEl;
+}
+
+// Forward the fallthrough `class` onto the detached content element (additively,
+// preserving the base class above). Without this, classes passed to <Popup class>
+// would be dropped because the Teleport root has no element to inherit them.
+const attrs = useAttrs();
+let forwardedClasses: string[] = [];
+watchEffect(() => {
+  const el = popupElRef.value;
+  if (!el) return;
+  const nextClasses: string[] = normalizeClassTokens(attrs.class);
+  forwardedClasses
+    .filter((token) => !nextClasses.includes(token))
+    .forEach((token) => el.classList.remove(token));
+  nextClasses.forEach((token) => el.classList.add(token));
+  forwardedClasses = nextClasses;
+});
 
 // Computed properties for better performance
 const popupOptions = computed(() => ({
@@ -103,6 +142,8 @@ watch(
   },
 );
 
+// Reference watch: pass a new coordinate value to move the popup. Mutating
+// the existing `lnglat` array or object in place no longer triggers an update.
 watch(
   () => props.lnglat,
   (newLnglat) => {
@@ -110,11 +151,10 @@ watch(
       setLngLat(newLnglat);
     }
   },
-  { deep: true },
 );
 </script>
 <template>
-  <div ref="popupElRef" class="maptiler-popup-content-inner">
+  <Teleport v-if="popupElRef" :to="popupElRef">
     <slot />
-  </div>
+  </Teleport>
 </template>
