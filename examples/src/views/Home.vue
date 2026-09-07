@@ -6,7 +6,10 @@ import {
   useMapTiler,
   type MapOptions,
 } from 'vue3-maptiler-gl';
-import 'vue3-maptiler-gl/dist/style.css';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
+// A consumer also imports the package stylesheet, 'vue3-maptiler-gl/dist/style.css'.
+// This demo resolves the package to libs/ (see vite.config.ts), where that
+// stylesheet is the <style> block of MapTiler.vue and the component applies it.
 
 const options = computed<MapOptions>(() => ({
   container: 'map',

@@ -1,142 +1,46 @@
-import { onUnmounted, unref, watchEffect, computed, ref } from 'vue';
-import { useLogger } from '@libs/composables';
+import {
+  createEventListenerComposable,
+  EventListenerStatus,
+  type EventListenerActions,
+} from './createEventListenerComposable';
 import type { Nullable, MapEventTypes } from '@libs/types';
 import type { MaybeRef } from 'vue';
 import type { Map } from '@maptiler/sdk';
 
-/**
- * Event listener status enum for better state management
- */
-export enum EventListenerStatus {
-  NotAttached = 'not-attached',
-  Attached = 'attached',
-  Error = 'error',
-}
+// Re-export for backward compatibility
+export { EventListenerStatus };
 
-interface MapEventListenerProps {
+/**
+ * `T` is inferred from `event`, which is the whole point of it: a handler
+ * registered for `'click'` has to receive a `MapMouseEvent`, not the union of
+ * every map event. The generic used to sit on `on` itself, where nothing could
+ * ever infer it, so `event.lngLat` failed to compile in correct code.
+ */
+interface MapEventListenerProps<T extends keyof MapEventTypes> {
   map: MaybeRef<Nullable<Map>>;
-  event: keyof MapEventTypes;
-  on: <T extends keyof MapEventTypes>(e: MapEventTypes[T]) => void;
+  event: T;
+  on: (e: MapEventTypes[T]) => void;
   debug?: boolean;
   once?: boolean;
 }
 
-interface MapEventListenerActions {
-  removeListener: () => void;
-  attachListener: () => void;
-  isListenerAttached: boolean;
-  listenerStatus: Readonly<EventListenerStatus>;
-}
+interface MapEventListenerActions extends EventListenerActions {}
 
 /**
- * Composable for managing MapTiler GL Map Event Listeners
- * Provides reactive event listener with error handling, performance optimizations, and enhanced API
- *
- * @param props - Configuration options for the map event listener
- * @returns Enhanced actions and state for the event listener
+ * Composable for managing MapTiler SDK Map Event Listeners
  */
-export function useMapEventListener(
-  props: MapEventListenerProps,
+export function useMapEventListener<T extends keyof MapEventTypes>(
+  props: MapEventListenerProps<T>,
 ): MapEventListenerActions {
-  const { logError } = useLogger(props.debug ?? false);
-  const listenerStatus = ref<EventListenerStatus>(
-    EventListenerStatus.NotAttached,
-  );
-
-  // Computed properties for better reactivity and performance
-  const mapInstance = computed(() => unref(props.map));
-  const isListenerAttached = computed(
-    () => listenerStatus.value === EventListenerStatus.Attached,
-  );
-
-  /**
-   * Enhanced event handler with error handling and debugging
-   * @param e - Map event data
-   */
-  const mapEventFn = (e: MapEventTypes[keyof MapEventTypes]): void => {
-    try {
-      if (props.on) props.on(e);
-
-      // Remove listener if it's a one-time event
-      if (props.once) removeListener();
-    } catch (error) {
-      logError('Error in map event handler:', error, { event: props.event });
-      listenerStatus.value = EventListenerStatus.Error;
-    }
-  };
-
-  /**
-   * Attaches the event listener to the map with error handling
-   */
-  function attachListener(): void {
-    const map = mapInstance.value;
-
-    if (!map) return;
-
-    if (listenerStatus.value === EventListenerStatus.Attached) return;
-
-    try {
-      map.on(props.event, mapEventFn);
-      listenerStatus.value = EventListenerStatus.Attached;
-    } catch (error) {
-      listenerStatus.value = EventListenerStatus.Error;
-      logError('Error attaching map event listener:', error, {
-        event: props.event,
-      });
-    }
-  }
-
-  /**
-   * Removes the event listener from the map with error handling
-   */
-  function removeListener(): void {
-    const map = mapInstance.value;
-
-    if (!map) return;
-
-    if (listenerStatus.value === EventListenerStatus.NotAttached) return;
-    try {
-      map.off(props.event, mapEventFn);
-      listenerStatus.value = EventListenerStatus.NotAttached;
-    } catch (error) {
-      logError('Error removing map event listener:', error, {
-        event: props.event,
-      });
-      // Still mark as not attached even if removal failed
-      listenerStatus.value = EventListenerStatus.NotAttached;
-    }
-  }
-
-  // Optimized watch for map changes with reduced overhead
-  let lastMapInstance: any = null;
-  const stopEffect = watchEffect((onCleanUp) => {
-    const map = mapInstance.value;
-
-    // Only process if map instance actually changed
-    if (map === lastMapInstance) return;
-    lastMapInstance = map;
-
-    if (map && listenerStatus.value === EventListenerStatus.NotAttached) {
-      attachListener();
-    } else if (!map && listenerStatus.value === EventListenerStatus.Attached) {
-      removeListener();
-    }
-    onCleanUp(removeListener);
+  return createEventListenerComposable<Map>({
+    target: props.map,
+    event: props.event as string,
+    on: props.on,
+    debug: props.debug,
+    once: props.once,
+    adapter: {
+      attach: (map, event, handler) => map.on(event as any, handler),
+      detach: (map, event, handler) => map.off(event as any, handler),
+    },
   });
-
-  // Cleanup function for removing listener and stopping watchers
-  function cleanup(): void {
-    stopEffect();
-    removeListener();
-  }
-
-  // Automatic cleanup on component unmount
-  onUnmounted(cleanup);
-
-  return {
-    removeListener,
-    attachListener,
-    isListenerAttached: isListenerAttached.value,
-    listenerStatus: listenerStatus.value as Readonly<EventListenerStatus>,
-  };
 }

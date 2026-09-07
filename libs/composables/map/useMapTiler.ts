@@ -61,9 +61,9 @@ interface UseMapTilerReturn
 }
 
 /**
- * Composable for managing MapTiler GL Map instances
+ * Composable for managing MapTiler SDK Map instances
  *
- * Provides reactive state management and a clean API for interacting with MapTiler GL maps.
+ * Provides reactive state management and a clean API for interacting with MapTiler SDK maps.
  * Handles registration, lifecycle management, and provides reactive access to map state.
  *
  * @param options - Configuration options for the composable
@@ -73,7 +73,7 @@ export function useMapTiler(
   options: UseMapTilerOptions = {},
 ): UseMapTilerReturn {
   const { debug = false, autoCleanup = true } = options;
-  const { logError } = useLogger(debug);
+  const { log, logError } = useLogger(debug);
 
   // Internal state
   const instanceRef = ref<MapTilerActions>();
@@ -115,21 +115,17 @@ export function useMapTiler(
 
       // Prevent duplicate registration
       if (instance === unref(instanceRef)) {
-        if (debug) {
-          console.log('Skipping duplicate registration for same instance');
-        }
+        log('Skipping duplicate registration for same instance');
         return;
       }
 
-      if (debug) {
-        console.log('🔄 Registering MapTiler instance with useMapTiler', {
-          hasMapInstance: !!instance.mapInstance,
-          currentMapCreationStatus: instance.mapCreationStatus,
-          isMapReady: instance.isMapReady,
-          isMapLoading: instance.isMapLoading,
-          hasMapError: instance.hasMapError,
-        });
-      }
+      log('🔄 Registering MapTiler instance with useMapTiler', {
+        hasMapInstance: !!instance.mapInstance,
+        currentMapCreationStatus: instance.mapCreationStatus.value,
+        isMapReady: instance.isMapReady.value,
+        isMapLoading: instance.isMapLoading.value,
+        hasMapError: instance.hasMapError.value,
+      });
       instanceRef.value = instance;
 
       // Clean up previous watch scope
@@ -137,72 +133,54 @@ export function useMapTiler(
 
       // Set up new watch scope for instance changes
       watchScope = effectScope();
+      // Set initial status from instance before the watcher's immediate run
+      // refines it from the map itself.
+      mapStatus.value = instance.mapCreationStatus.value;
+
       watchScope.run(() => {
-        // Watch for map instance changes
+        // One watcher over the map and the instance's error flag. The flag is
+        // a real dependency, not just a read inside the callback: when map
+        // construction throws, `mapInstance` stays `null` and never changes,
+        // so watching it alone would never see the failure.
         watch(
-          () => instance.mapInstance.value,
-          (map) => {
+          () =>
+            [instance.mapInstance.value, instance.hasMapError.value] as const,
+          ([map, hasError], _previous, onCleanUp) => {
             try {
               mapInstance.value = map;
-              if (debug) {
-                console.log('🗺️ Map instance updated in useMapTiler', {
-                  hasMap: !!map,
-                  mapLoaded: map?.loaded?.(),
-                });
-              }
-            } catch (error) {
-              mapStatus.value = MapCreationStatus.Error;
-              logError('Error updating map instance:', error);
-            }
-          },
-          {
-            immediate: true,
-          },
-        );
+              // No `loaded()` in the payload: it walks every source in the
+              // style, and the branch below already logs that outcome.
+              log('🗺️ Map instance updated in useMapTiler', { hasMap: !!map });
 
-        // Set initial status from instance
-        mapStatus.value = instance.mapCreationStatus;
-
-        // Watch for map instance changes to determine status
-        watch(
-          () => instance.mapInstance.value,
-          (map) => {
-            try {
-              if (map) {
+              if (hasError) {
+                mapStatus.value = MapCreationStatus.Error;
+              } else if (map) {
                 // Map instance exists, check if it's loaded
                 if (map.loaded()) {
                   mapStatus.value = MapCreationStatus.Loaded;
-                  if (debug) {
-                    console.log('Map successfully registered with useMapTiler');
-                  }
+                  log('Map successfully registered with useMapTiler');
                 } else {
                   // Map exists but not loaded yet
                   mapStatus.value = MapCreationStatus.Loading;
 
-                  // Listen for load event
+                  // Listen for load event. `once` plus cleanup, so a replaced
+                  // map does not leave a listener behind on the old one.
                   const onLoad = () => {
                     mapStatus.value = MapCreationStatus.Loaded;
-                    if (debug) {
-                      console.log('Map loaded and registered with useMapTiler');
-                    }
-                    map.off('load', onLoad);
+                    log('Map loaded and registered with useMapTiler');
                   };
 
-                  map.on('load', onLoad);
+                  map.once('load', onLoad);
+                  onCleanUp(() => map.off('load', onLoad));
                 }
+              } else if (instance.isMapLoading.value) {
+                mapStatus.value = MapCreationStatus.Loading;
               } else {
-                // No map instance
-                if (instance.hasMapError) {
-                  mapStatus.value = MapCreationStatus.Error;
-                } else if (instance.isMapLoading) {
-                  mapStatus.value = MapCreationStatus.Loading;
-                } else {
-                  mapStatus.value = MapCreationStatus.NotInitialized;
-                }
+                mapStatus.value = MapCreationStatus.NotInitialized;
               }
             } catch (error) {
               mapStatus.value = MapCreationStatus.Error;
-              logError('Error updating map status:', error);
+              logError('Error handling map instance change:', error);
             }
           },
           {
@@ -310,7 +288,7 @@ export function useMapTiler(
     const instance = getInstance();
     if (instance?.setMapOptions) {
       instance.setMapOptions(options);
-      if (debug) console.log('Map options updated', options);
+      log('Map options updated', options);
     } else {
       logError('Cannot set map options: no registered instance');
     }

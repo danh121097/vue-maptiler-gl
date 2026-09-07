@@ -5,7 +5,6 @@ export * from './useFitScreenCoordinates';
 export * from './useFlyTo';
 export * from './useJumpTo';
 export * from './useLogger';
-export * from './useOptimizedComputed';
 export * from './usePan';
 export * from './useRotate';
 export * from './useZoom';
