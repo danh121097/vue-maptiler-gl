@@ -69,7 +69,7 @@ interface LayerManagementActions {
 }
 
 /**
- * Composable for managing MapTiler GL Layer instances
+ * Composable for managing MapTiler SDK Layer instances
  * Provides reactive layer management with error handling, performance optimizations, and enhanced API
  *
  * @param props - Configuration options for layer management

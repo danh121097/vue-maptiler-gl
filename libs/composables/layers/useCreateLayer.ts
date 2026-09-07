@@ -1,15 +1,15 @@
-import { shallowRef, unref, computed, watch, ref } from 'vue';
-import type { CreateBaseLayerActions, Nullable, LayerTypes } from '@libs/types';
+import { useLogger, useMapReloadEvent } from '@libs/composables';
 import { getNanoid, hasLayer, hasSource } from '@libs/helpers';
-import { useMapReloadEvent, useLogger } from '@libs/composables';
-import type { MaybeRef } from 'vue';
+import type { CreateBaseLayerActions, LayerTypes, Nullable } from '@libs/types';
 import type {
-  SourceSpecification,
   FilterSpecification,
-  Map,
-  StyleSetterOptions,
   LayerSpecification,
+  Map,
+  SourceSpecification,
+  StyleSetterOptions,
 } from '@maptiler/sdk';
+import type { ComputedRef, MaybeRef } from 'vue';
+import { computed, markRaw, ref, shallowRef, unref, watch } from 'vue';
 
 /**
  * Layer creation status enum for better state management
@@ -40,8 +40,8 @@ export interface CreateBaseLayerProps<Layer extends LayerSpecification> {
 
 export interface EnhancedLayerActions<Layer extends LayerSpecification>
   extends CreateBaseLayerActions<Layer> {
-  layerStatus: Readonly<LayerStatus>;
-  isLayerReady: boolean;
+  layerStatus: ComputedRef<LayerStatus>;
+  isLayerReady: ComputedRef<boolean>;
   refreshLayer: () => void;
   updateLayer: (updates: {
     filter?: FilterSpecification;
@@ -53,7 +53,7 @@ export interface EnhancedLayerActions<Layer extends LayerSpecification>
 }
 
 /**
- * Composable for creating and managing MapTiler GL Layers
+ * Composable for creating and managing MapTiler SDK Layers
  * Provides reactive layer management with error handling, performance optimizations, and enhanced API
  *
  * @param cfg - Configuration options for the layer
@@ -79,10 +79,23 @@ export function useCreateLayer<Layer extends LayerSpecification>(
     register,
   } = cfg;
 
-  const { logWarn, logError } = useLogger(debug);
+  const { logError } = useLogger(debug);
   const layerId = getNanoid(id);
   const layer = shallowRef<Nullable<Layer>>(null);
   const layerStatus = ref<LayerStatus>(LayerStatus.NotCreated);
+
+  // The configuration the layer should currently have. Creation is deferred
+  // and a style reload rebuilds the layer from scratch, so every setter
+  // records here first and `createLayer` builds from it — a change made while
+  // the layer is not on the map is applied once it is, not dropped.
+  const current = {
+    beforeId,
+    filter,
+    layout: { ...(layout || {}) } as Record<string, any>,
+    paint: { ...(paint || {}) } as Record<string, any>,
+    minzoom,
+    maxzoom,
+  };
 
   // Computed properties for better reactivity and performance
   const getLayer = computed(() => layer.value);
@@ -110,7 +123,7 @@ export function useCreateLayer<Layer extends LayerSpecification>(
   useMapReloadEvent({
     map: mapRef,
     callbacks: {
-      onUnload: removeLayer,
+      onUnload: removeLayerFrom,
       onLoad: createLayer,
     },
     debug,
@@ -131,6 +144,7 @@ export function useCreateLayer<Layer extends LayerSpecification>(
    * @param beforeIdVal - ID of the layer to insert this layer before
    */
   function setBeforeId(beforeIdVal?: string): void {
+    current.beforeId = beforeIdVal;
     if (!validateLayerOperation()) return;
 
     try {
@@ -146,6 +160,7 @@ export function useCreateLayer<Layer extends LayerSpecification>(
    * @param filterVal - Filter specification for the layer
    */
   function setFilter(filterVal: FilterSpecification = ['all']): void {
+    current.filter = filterVal;
     if (!validateLayerOperation()) return;
 
     try {
@@ -162,10 +177,13 @@ export function useCreateLayer<Layer extends LayerSpecification>(
    * @param maxzoomVal - Maximum zoom level (default: 24)
    */
   function setZoomRange(minzoomVal = 0, maxzoomVal = 24): void {
-    if (!validateLayerOperation()) return;
-
     // Validate zoom range
     if (minzoomVal < 0 || maxzoomVal > 24 || minzoomVal >= maxzoomVal) return;
+
+    current.minzoom = minzoomVal;
+    current.maxzoom = maxzoomVal;
+    if (!validateLayerOperation()) return;
+
     try {
       const map = mapInstance.value!;
       map.setLayerZoomRange(layerId, minzoomVal, maxzoomVal);
@@ -185,6 +203,7 @@ export function useCreateLayer<Layer extends LayerSpecification>(
     value: any,
     options: StyleSetterOptions = { validate: true },
   ): void {
+    current.paint[name] = value;
     if (!validateLayerOperation()) return;
 
     try {
@@ -209,6 +228,7 @@ export function useCreateLayer<Layer extends LayerSpecification>(
     value: any,
     options: StyleSetterOptions = { validate: true },
   ): void {
+    current.layout[name] = value;
     if (!validateLayerOperation()) return;
 
     try {
@@ -223,27 +243,20 @@ export function useCreateLayer<Layer extends LayerSpecification>(
   }
 
   /**
-   * Resolves source data from various input types
-   * @param source - Source input (string, object, or specification)
-   * @returns Resolved source data or null if invalid
+   * Resolves the `source` prop to the id of a source already on the map.
+   *
+   * A layer references its source by id — MapTiler offers no way to hand
+   * `addLayer` an inline specification — so an object is usable here only when
+   * it carries its own string id. A bare specification such as
+   * `{ type: 'geojson', data }` has none, and reporting that is more useful
+   * than passing `addLayer` an empty id and letting it fail deeper in.
    */
-  function resolveSourceData(source: any): string | null {
-    if (typeof source === 'string') {
-      return source;
-    }
+  function resolveSourceData(source: unknown): string | null {
+    if (typeof source === 'string') return source;
 
-    if (typeof source === 'object' && source !== null) {
-      if ('id' in source && typeof source.id === 'string') {
-        return source.id;
-      }
-      // For source specifications, we need to return the source ID
-      // This assumes the source has already been added to the map
-      if ('type' in source) {
-        logWarn(
-          'Warning: Source specification provided, ensure source is added to map first',
-        );
-        return source.id || '';
-      }
+    if (typeof source === 'object' && source !== null && 'id' in source) {
+      const { id } = source as { id: unknown };
+      if (typeof id === 'string') return id;
     }
 
     return null;
@@ -269,6 +282,12 @@ export function useCreateLayer<Layer extends LayerSpecification>(
       const sourceData = resolveSourceData(source);
       if (!sourceData) {
         layerStatus.value = LayerStatus.Error;
+        logError(
+          'Error creating layer: `source` must be a source id, or an object carrying one. ' +
+            'Add the source to the map first — with <GeoJsonSource> or useCreateGeoJsonSource — and pass its id.',
+          null,
+          { layerId, type },
+        );
         return;
       }
 
@@ -287,17 +306,18 @@ export function useCreateLayer<Layer extends LayerSpecification>(
         id: layerId,
         type,
         source: sourceData,
-        layout: layout || {},
-        paint: paint || {},
+        layout: { ...current.layout },
+        paint: { ...current.paint },
         'source-layer': sourceLayer,
-        minzoom,
-        maxzoom,
+        minzoom: current.minzoom,
+        maxzoom: current.maxzoom,
         metadata,
-        filter,
+        filter: current.filter,
       } as LayerSpecification;
 
-      map.addLayer(layerSpec, beforeId);
-      layer.value = map.getLayer(layerId) as unknown as Layer;
+      map.addLayer(layerSpec, current.beforeId);
+      // Use markRaw to prevent Vue reactivity overhead on MapTiler layer objects
+      layer.value = markRaw(map.getLayer(layerId) as unknown as Layer);
       layerStatus.value = LayerStatus.Created;
 
       // Register the enhanced actions
@@ -331,11 +351,10 @@ export function useCreateLayer<Layer extends LayerSpecification>(
   }
 
   /**
-   * Removes the layer with error handling and cleanup
+   * Removes the layer from a specific map. When the map ref is swapped the
+   * layer is still on the outgoing map, which the ref no longer points at.
    */
-  function removeLayer(): void {
-    const map = mapInstance.value;
-
+  function removeLayerFrom(map: Nullable<Map>): void {
     if (!map) return;
 
     try {
@@ -348,6 +367,13 @@ export function useCreateLayer<Layer extends LayerSpecification>(
       layer.value = null;
       layerStatus.value = LayerStatus.NotCreated;
     }
+  }
+
+  /**
+   * Removes the layer with error handling and cleanup
+   */
+  function removeLayer(): void {
+    removeLayerFrom(mapInstance.value);
   }
 
   /**
@@ -369,8 +395,6 @@ export function useCreateLayer<Layer extends LayerSpecification>(
     paint?: Record<string, any>;
     layout?: Record<string, any>;
   }): void {
-    if (!validateLayerOperation()) return;
-
     try {
       // Update filter if provided
       if (updates.filter !== undefined) {
@@ -409,8 +433,8 @@ export function useCreateLayer<Layer extends LayerSpecification>(
     setZoomRange,
     setPaintProperty,
     setLayoutProperty,
-    layerStatus: layerStatus.value as Readonly<LayerStatus>,
-    isLayerReady: isLayerReady.value,
+    layerStatus: computed(() => layerStatus.value),
+    isLayerReady,
     refreshLayer,
     updateLayer,
   };

@@ -1,3 +1,5 @@
+export * from './layerStyleConfig';
+export * from './createLayerPropertySetters';
 export * from './useCreateLayer';
 export * from './useCreateFillLayer';
 export * from './useCreateCircleLayer';

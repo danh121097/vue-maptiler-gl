@@ -1,3 +1,5 @@
+export * from './cameraAnimationTypes';
+export * from './createCameraAnimation';
 export * from './useBounds';
 export * from './useDebounce';
 export * from './useEaseTo';

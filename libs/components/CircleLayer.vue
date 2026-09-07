@@ -22,7 +22,7 @@ import type {
 
 /**
  * Props interface for CircleLayer component
- * Defines all configurable properties for a MapTiler GL Circle Layer
+ * Defines all configurable properties for a MapTiler SDK Circle Layer
  */
 interface LayerProps {
   /** Unique identifier for the layer */
@@ -136,10 +136,14 @@ const {
   map: mapInstance,
   source: effectiveSource,
   style: mergedStyle.value,
-  filter: props.filter || ['all'],
+  // Passed through untouched. `useCreateLayer` declares the defaults --
+  // `['all']`, `24` and `0` -- and a default applies to `undefined` only, so
+  // coalescing here would both duplicate them and change them: `|| 1` made an
+  // explicit `minzoom: 0` unreachable, since `0` is falsy.
+  filter: props.filter,
   id: props.id,
-  maxzoom: props.maxzoom || 22,
-  minzoom: props.minzoom || 1,
+  maxzoom: props.maxzoom,
+  minzoom: props.minzoom,
   metadata: props.metadata,
   sourceLayer: props.sourceLayer,
   register: handleRegister,
@@ -189,7 +193,6 @@ const stopPropsWatcher = watch(
     }
   },
   {
-    deep: true,
     flush: 'post', // Run after DOM updates for better performance
   },
 );

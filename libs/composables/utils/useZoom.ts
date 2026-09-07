@@ -1,12 +1,10 @@
-import { watchEffect, ref, computed, unref, onUnmounted } from 'vue';
+import { watch, ref, computed, unref, onUnmounted } from 'vue';
 import { useLogger } from '@libs/composables';
+import { createCameraAnimation } from './createCameraAnimation';
 import type { Nullable, Undefinedable } from '@libs/types';
-import type { MaybeRef } from 'vue';
+import type { ComputedRef, MaybeRef } from 'vue';
 import type { Map, AnimationOptions, CameraOptions } from '@maptiler/sdk';
 
-/**
- * Zoom animation status enum for better state management
- */
 export enum ZoomStatus {
   NotStarted = 'not-started',
   Zooming = 'zooming',
@@ -21,74 +19,79 @@ interface ZoomToProps {
   debug?: boolean;
   autoZoom?: boolean;
 }
-
 interface ZoomToActions {
   zoomTo: (zoom: number, options?: AnimationOptions) => Promise<void>;
   stopZooming: () => void;
   getCurrentZoom: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
   validateZoomLevel: (zoom: number) => boolean;
-  zoomStatus: Readonly<ZoomStatus>;
-  isZooming: boolean;
+  zoomStatus: ComputedRef<ZoomStatus>;
+  isZooming: ComputedRef<boolean>;
 }
-
 interface ZoomInProps {
   map: MaybeRef<Nullable<Map>>;
   options?: AnimationOptions;
   debug?: boolean;
   autoZoom?: boolean;
 }
-
 interface ZoomInActions {
   zoomIn: (options?: AnimationOptions) => Promise<void>;
   stopZooming: () => void;
   getCurrentZoom: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
-  zoomStatus: Readonly<ZoomStatus>;
-  isZooming: boolean;
+  zoomStatus: ComputedRef<ZoomStatus>;
+  isZooming: ComputedRef<boolean>;
 }
-
 interface ZoomOutProps {
   map: MaybeRef<Nullable<Map>>;
   options?: AnimationOptions;
   debug?: boolean;
   autoZoom?: boolean;
 }
-
 interface ZoomOutActions {
   zoomOut: (options?: AnimationOptions) => Promise<void>;
   stopZooming: () => void;
   getCurrentZoom: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
-  zoomStatus: Readonly<ZoomStatus>;
-  isZooming: boolean;
+  zoomStatus: ComputedRef<ZoomStatus>;
+  isZooming: ComputedRef<boolean>;
 }
 
-/**
- * Composable for managing map zoom-to operations with enhanced error handling
- * Provides reactive zoom-to functionality with validation and debugging capabilities
- *
- * @param props - Configuration options for zoom-to functionality
- * @returns Enhanced actions and state for zoom-to operations
- */
-export function useZoomTo(props: ZoomToProps): ZoomToActions;
+// --- Shared helpers ---
 
-/**
- * Legacy overload for backward compatibility
- * @deprecated Use the new props-based interface for better type safety and features
- */
+function validateZoomLevel(zoom: number): boolean {
+  return typeof zoom === 'number' && !isNaN(zoom) && zoom >= 0 && zoom <= 24;
+}
+
+function makeGetCurrentZoom(
+  mapInstance: { value: Map | null },
+  logError: (...a: any[]) => void,
+) {
+  return (): number | null => {
+    const map = mapInstance.value;
+    if (!map) return null;
+    try {
+      return map.getZoom();
+    } catch (error) {
+      logError('Error getting current zoom:', error);
+      return null;
+    }
+  };
+}
+
+// --- useZoomTo ---
+
+export function useZoomTo(props: ZoomToProps): ZoomToActions;
 export function useZoomTo(
   map: MaybeRef<Nullable<Map>>,
   options?: AnimationOptions & { zoom: number },
 ): { zoomTo: (zoomVal: number, options?: AnimationOptions) => void };
-
 export function useZoomTo(
   mapOrProps: MaybeRef<Nullable<Map>> | ZoomToProps,
   legacyOptions?: AnimationOptions & { zoom: number },
 ):
   | ZoomToActions
   | { zoomTo: (zoomVal: number, options?: AnimationOptions) => void } {
-  // Handle legacy API for backward compatibility
   const isLegacyAPI =
     legacyOptions !== undefined || !('map' in (mapOrProps as any));
   const props: ZoomToProps = isLegacyAPI
@@ -105,194 +108,76 @@ export function useZoomTo(
   const zoom = ref<number | undefined>(props.zoom);
   const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
   const zoomStatus = ref<ZoomStatus>(ZoomStatus.NotStarted);
-
-  // Computed properties for better reactivity and performance
   const mapInstance = computed(() => unref(props.map));
   const isZooming = computed(() => zoomStatus.value === ZoomStatus.Zooming);
 
-  /**
-   * Validates if zoom operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateZoomOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) {
-      return false;
-    }
-    return true;
-  }
+  const { executeAnimation, getCurrentCamera, stopAnimation } =
+    createCameraAnimation({ map: props.map, debug: props.debug });
+  const getCurrentZoom = makeGetCurrentZoom(mapInstance, logError);
 
-  /**
-   * Validates zoom level for correctness
-   * @param zoom - Zoom level to validate
-   * @returns boolean indicating if zoom level is valid
-   */
-  function validateZoomLevel(zoom: number): boolean {
-    if (typeof zoom !== 'number' || isNaN(zoom)) {
-      return false;
-    }
-
-    if (zoom < 0 || zoom > 24) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Gets the current zoom level
-   * @returns Current zoom level or null
-   */
-  function getCurrentZoom(): number | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return map.getZoom();
-    } catch (error) {
-      logError('Error getting current zoom:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the current camera position
-   * @returns Current camera options or null
-   */
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch (error) {
-      logError('Error getting current camera:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Performs zoom-to operation with enhanced error handling and validation
-   * @param zoomVal - Target zoom level
-   * @param options - Animation options
-   * @returns Promise that resolves when animation completes
-   */
   function zoomTo(zoomVal: number, options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!validateZoomOperation()) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
-
-      if (!validateZoomLevel(zoomVal)) {
-        zoomStatus.value = ZoomStatus.Error;
-        reject(new Error('Invalid zoom level'));
-        return;
-      }
-
-      const map = mapInstance.value!;
-      const finalOptions = options || animationOptions.value;
-      zoomStatus.value = ZoomStatus.Zooming;
-
-      try {
-        // Store values for future use
-        zoom.value = zoomVal;
-        if (options) animationOptions.value = options;
-
-        if (finalOptions) {
-          // Add event listeners for animation completion
-          const onZoomEnd = () => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Completed;
-            resolve();
-          };
-
-          const onError = (error: any) => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Error;
-            reject(error);
-          };
-
-          map.once('zoomend', onZoomEnd);
-          map.once('error', onError);
-
-          // Start the animation
-          map.zoomTo(zoomVal, finalOptions);
-        } else {
-          // Immediate zoom without animation
-          map.zoomTo(zoomVal);
-          zoomStatus.value = ZoomStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
-        zoomStatus.value = ZoomStatus.Error;
-        logError('Error performing zoom-to operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Stops any ongoing zoom animation
-   */
-  function stopZooming(): void {
-    const map = mapInstance.value;
-    if (!map) {
-      return;
+    if (!validateZoomLevel(zoomVal)) {
+      zoomStatus.value = ZoomStatus.Error;
+      return Promise.reject(new Error('Invalid zoom level'));
     }
+    zoom.value = zoomVal;
+    if (options) animationOptions.value = options;
+    const finalOptions = options || animationOptions.value;
+    zoomStatus.value = ZoomStatus.Zooming;
 
-    try {
-      map.stop();
-      zoomStatus.value = ZoomStatus.Completed;
-    } catch (error) {
-      logError('Error stopping zoom animation:', error);
-    }
-  }
-
-  // Legacy function for backward compatibility
-  function legacyZoomTo(zoomVal: number, options?: AnimationOptions): void {
-    zoomTo(zoomVal, options).catch((error) => {
-      logError('Error in legacy zoomTo:', error);
-    });
-  }
-
-  // Watch for map and options changes
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      zoom.value !== undefined &&
-      props.autoZoom !== false &&
-      zoomStatus.value === ZoomStatus.NotStarted
-    ) {
-      zoomTo(zoom.value, animationOptions.value).catch((error) => {
-        logError('Error in watchEffect zoomTo:', error);
+    // Settle on `moveend`, which every ease fires; `zoomend` only fires when
+    // the zoom actually changed, so zooming to the current level would never
+    // resolve. Without options MapTiler is not instant — it still eases over
+    // its default duration — so that path is awaited too. `finalOptions` may
+    // be undefined: it must still occupy the options slot so the completion
+    // token lands in `eventData`.
+    return executeAnimation('zoomTo', [zoomVal, finalOptions], 'moveend')
+      .then(() => {
+        zoomStatus.value = ZoomStatus.Completed;
+      })
+      .catch((error) => {
+        zoomStatus.value = ZoomStatus.Error;
+        throw error;
       });
-    }
-  });
+  }
 
-  // Cleanup function
-  function cleanup(): void {
+  function stopZooming(): void {
+    stopAnimation();
     zoomStatus.value = ZoomStatus.Completed;
   }
 
-  // Cleanup on component unmount
-  onUnmounted(cleanup);
+  // Auto-zoom once a map arrives. Watching the map instance rather than
+  // running an effect keeps `zoomStatus` — which `zoomTo` writes — out of the
+  // dependency set.
+  watch(
+    mapInstance,
+    (map) => {
+      if (
+        map &&
+        zoom.value !== undefined &&
+        props.autoZoom !== false &&
+        zoomStatus.value === ZoomStatus.NotStarted
+      ) {
+        zoomTo(zoom.value, animationOptions.value).catch((error) => {
+          logError('Error in auto zoomTo:', error);
+        });
+      }
+    },
+    { immediate: true },
+  );
 
-  // Return appropriate interface based on API version
+  onUnmounted(() => {
+    zoomStatus.value = ZoomStatus.Completed;
+  });
+
   if (isLegacyAPI) {
-    return { zoomTo: legacyZoomTo };
+    return {
+      zoomTo: (zoomVal: number, options?: AnimationOptions) => {
+        zoomTo(zoomVal, options).catch((e) =>
+          logError('Error in legacy zoomTo:', e),
+        );
+      },
+    };
   }
 
   return {
@@ -301,34 +186,22 @@ export function useZoomTo(
     getCurrentZoom,
     getCurrentCamera,
     validateZoomLevel,
-    zoomStatus: zoomStatus.value as Readonly<ZoomStatus>,
-    isZooming: isZooming.value,
+    zoomStatus: computed(() => zoomStatus.value),
+    isZooming,
   };
 }
 
-/**
- * Composable for managing map zoom-in operations with enhanced error handling
- * Provides reactive zoom-in functionality with validation and debugging capabilities
- *
- * @param props - Configuration options for zoom-in functionality
- * @returns Enhanced actions and state for zoom-in operations
- */
-export function useZoomIn(props: ZoomInProps): ZoomInActions;
+// --- useZoomIn ---
 
-/**
- * Legacy overload for backward compatibility
- * @deprecated Use the new props-based interface for better type safety and features
- */
+export function useZoomIn(props: ZoomInProps): ZoomInActions;
 export function useZoomIn(
   map: MaybeRef<Nullable<Map>>,
   options?: AnimationOptions,
 ): { zoomIn: (options?: AnimationOptions) => void };
-
 export function useZoomIn(
   mapOrProps: MaybeRef<Nullable<Map>> | ZoomInProps,
   legacyOptions?: AnimationOptions,
 ): ZoomInActions | { zoomIn: (options?: AnimationOptions) => void } {
-  // Handle legacy API for backward compatibility
   const isLegacyAPI =
     legacyOptions !== undefined || !('map' in (mapOrProps as any));
   const props: ZoomInProps = isLegacyAPI
@@ -343,168 +216,61 @@ export function useZoomIn(
   const { logError } = useLogger(props.debug ?? false);
   const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
   const zoomStatus = ref<ZoomStatus>(ZoomStatus.NotStarted);
-
-  // Computed properties for better reactivity and performance
   const mapInstance = computed(() => unref(props.map));
   const isZooming = computed(() => zoomStatus.value === ZoomStatus.Zooming);
 
-  /**
-   * Validates if zoom operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateZoomOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) {
-      return false;
-    }
-    return true;
-  }
+  const { executeAnimation, getCurrentCamera, stopAnimation } =
+    createCameraAnimation({ map: props.map, debug: props.debug });
+  const getCurrentZoom = makeGetCurrentZoom(mapInstance, logError);
 
-  /**
-   * Gets the current zoom level
-   * @returns Current zoom level or null
-   */
-  function getCurrentZoom(): number | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return map.getZoom();
-    } catch (error) {
-      logError('Error getting current zoom:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the current camera position
-   * @returns Current camera options or null
-   */
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch (error) {
-      logError('Error getting current camera:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Performs zoom-in operation with enhanced error handling and validation
-   * @param options - Animation options
-   * @returns Promise that resolves when animation completes
-   */
   function zoomIn(options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!validateZoomOperation()) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
+    if (options) animationOptions.value = options;
+    const finalOptions = options || animationOptions.value;
+    zoomStatus.value = ZoomStatus.Zooming;
 
-      const map = mapInstance.value!;
-      const finalOptions = options || animationOptions.value;
-      zoomStatus.value = ZoomStatus.Zooming;
-
-      try {
-        // Store options for future use
-        if (options) animationOptions.value = options;
-
-        if (finalOptions) {
-          // Add event listeners for animation completion
-          const onZoomEnd = () => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Completed;
-            resolve();
-          };
-
-          const onError = (error: any) => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Error;
-            reject(error);
-          };
-
-          map.once('zoomend', onZoomEnd);
-          map.once('error', onError);
-
-          // Start the animation
-          map.zoomIn(finalOptions);
-        } else {
-          // Immediate zoom without animation
-          map.zoomIn();
-          zoomStatus.value = ZoomStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
+    // Awaited on `moveend` with or without options — see `useZoomTo`.
+    return executeAnimation('zoomIn', [finalOptions], 'moveend')
+      .then(() => {
+        zoomStatus.value = ZoomStatus.Completed;
+      })
+      .catch((error) => {
         zoomStatus.value = ZoomStatus.Error;
-        logError('Error performing zoom-in operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Stops any ongoing zoom animation
-   */
-  function stopZooming(): void {
-    const map = mapInstance.value;
-    if (!map) {
-      return;
-    }
-
-    try {
-      map.stop();
-      zoomStatus.value = ZoomStatus.Completed;
-    } catch (error) {
-      logError('Error stopping zoom animation:', error);
-    }
-  }
-
-  // Legacy function for backward compatibility
-  function legacyZoomIn(options?: AnimationOptions): void {
-    zoomIn(options).catch((error) => {
-      logError('Error in legacy zoomIn:', error);
-    });
-  }
-
-  // Watch for map and options changes
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      props.autoZoom !== false &&
-      zoomStatus.value === ZoomStatus.NotStarted
-    ) {
-      zoomIn(animationOptions.value).catch((error) => {
-        logError('Error in watchEffect zoomIn:', error);
+        throw error;
       });
-    }
-  });
+  }
 
-  // Cleanup function
-  function cleanup(): void {
+  function stopZooming(): void {
+    stopAnimation();
     zoomStatus.value = ZoomStatus.Completed;
   }
 
-  // Cleanup on component unmount
-  onUnmounted(cleanup);
+  // Auto-zoom once a map arrives — see the note in `useZoomTo`.
+  watch(
+    mapInstance,
+    (map) => {
+      if (
+        map &&
+        props.autoZoom !== false &&
+        zoomStatus.value === ZoomStatus.NotStarted
+      ) {
+        zoomIn(animationOptions.value).catch((error) => {
+          logError('Error in auto zoomIn:', error);
+        });
+      }
+    },
+    { immediate: true },
+  );
 
-  // Return appropriate interface based on API version
+  onUnmounted(() => {
+    zoomStatus.value = ZoomStatus.Completed;
+  });
+
   if (isLegacyAPI) {
-    return { zoomIn: legacyZoomIn };
+    return {
+      zoomIn: (options?: AnimationOptions) => {
+        zoomIn(options).catch((e) => logError('Error in legacy zoomIn:', e));
+      },
+    };
   }
 
   return {
@@ -512,34 +278,22 @@ export function useZoomIn(
     stopZooming,
     getCurrentZoom,
     getCurrentCamera,
-    zoomStatus: zoomStatus.value as Readonly<ZoomStatus>,
-    isZooming: isZooming.value,
+    zoomStatus: computed(() => zoomStatus.value),
+    isZooming,
   };
 }
 
-/**
- * Composable for managing map zoom-out operations with enhanced error handling
- * Provides reactive zoom-out functionality with validation and debugging capabilities
- *
- * @param props - Configuration options for zoom-out functionality
- * @returns Enhanced actions and state for zoom-out operations
- */
-export function useZoomOut(props: ZoomOutProps): ZoomOutActions;
+// --- useZoomOut ---
 
-/**
- * Legacy overload for backward compatibility
- * @deprecated Use the new props-based interface for better type safety and features
- */
+export function useZoomOut(props: ZoomOutProps): ZoomOutActions;
 export function useZoomOut(
   map: MaybeRef<Nullable<Map>>,
   options?: AnimationOptions,
 ): { zoomOut: (options?: AnimationOptions) => void };
-
 export function useZoomOut(
   mapOrProps: MaybeRef<Nullable<Map>> | ZoomOutProps,
   legacyOptions?: AnimationOptions,
 ): ZoomOutActions | { zoomOut: (options?: AnimationOptions) => void } {
-  // Handle legacy API for backward compatibility
   const isLegacyAPI =
     legacyOptions !== undefined || !('map' in (mapOrProps as any));
   const props: ZoomOutProps = isLegacyAPI
@@ -554,168 +308,61 @@ export function useZoomOut(
   const { logError } = useLogger(props.debug ?? false);
   const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
   const zoomStatus = ref<ZoomStatus>(ZoomStatus.NotStarted);
-
-  // Computed properties for better reactivity and performance
   const mapInstance = computed(() => unref(props.map));
   const isZooming = computed(() => zoomStatus.value === ZoomStatus.Zooming);
 
-  /**
-   * Validates if zoom operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateZoomOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) {
-      return false;
-    }
-    return true;
-  }
+  const { executeAnimation, getCurrentCamera, stopAnimation } =
+    createCameraAnimation({ map: props.map, debug: props.debug });
+  const getCurrentZoom = makeGetCurrentZoom(mapInstance, logError);
 
-  /**
-   * Gets the current zoom level
-   * @returns Current zoom level or null
-   */
-  function getCurrentZoom(): number | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return map.getZoom();
-    } catch (error) {
-      logError('Error getting current zoom:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the current camera position
-   * @returns Current camera options or null
-   */
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) {
-      return null;
-    }
-
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch (error) {
-      logError('Error getting current camera:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Performs zoom-out operation with enhanced error handling and validation
-   * @param options - Animation options
-   * @returns Promise that resolves when animation completes
-   */
   function zoomOut(options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!validateZoomOperation()) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
+    if (options) animationOptions.value = options;
+    const finalOptions = options || animationOptions.value;
+    zoomStatus.value = ZoomStatus.Zooming;
 
-      const map = mapInstance.value!;
-      const finalOptions = options || animationOptions.value;
-      zoomStatus.value = ZoomStatus.Zooming;
-
-      try {
-        // Store options for future use
-        if (options) animationOptions.value = options;
-
-        if (finalOptions) {
-          // Add event listeners for animation completion
-          const onZoomEnd = () => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Completed;
-            resolve();
-          };
-
-          const onError = (error: any) => {
-            map.off('zoomend', onZoomEnd);
-            map.off('error', onError);
-            zoomStatus.value = ZoomStatus.Error;
-            reject(error);
-          };
-
-          map.once('zoomend', onZoomEnd);
-          map.once('error', onError);
-
-          // Start the animation
-          map.zoomOut(finalOptions);
-        } else {
-          // Immediate zoom without animation
-          map.zoomOut();
-          zoomStatus.value = ZoomStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
+    // Awaited on `moveend` with or without options — see `useZoomTo`.
+    return executeAnimation('zoomOut', [finalOptions], 'moveend')
+      .then(() => {
+        zoomStatus.value = ZoomStatus.Completed;
+      })
+      .catch((error) => {
         zoomStatus.value = ZoomStatus.Error;
-        logError('Error performing zoom-out operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Stops any ongoing zoom animation
-   */
-  function stopZooming(): void {
-    const map = mapInstance.value;
-    if (!map) {
-      return;
-    }
-
-    try {
-      map.stop();
-      zoomStatus.value = ZoomStatus.Completed;
-    } catch (error) {
-      logError('Error stopping zoom animation:', error);
-    }
-  }
-
-  // Legacy function for backward compatibility
-  function legacyZoomOut(options?: AnimationOptions): void {
-    zoomOut(options).catch((error) => {
-      logError('Error in legacy zoomOut:', error);
-    });
-  }
-
-  // Watch for map and options changes
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      props.autoZoom !== false &&
-      zoomStatus.value === ZoomStatus.NotStarted
-    ) {
-      zoomOut(animationOptions.value).catch((error) => {
-        logError('Error in watchEffect zoomOut:', error);
+        throw error;
       });
-    }
-  });
+  }
 
-  // Cleanup function
-  function cleanup(): void {
+  function stopZooming(): void {
+    stopAnimation();
     zoomStatus.value = ZoomStatus.Completed;
   }
 
-  // Cleanup on component unmount
-  onUnmounted(cleanup);
+  // Auto-zoom once a map arrives — see the note in `useZoomTo`.
+  watch(
+    mapInstance,
+    (map) => {
+      if (
+        map &&
+        props.autoZoom !== false &&
+        zoomStatus.value === ZoomStatus.NotStarted
+      ) {
+        zoomOut(animationOptions.value).catch((error) => {
+          logError('Error in auto zoomOut:', error);
+        });
+      }
+    },
+    { immediate: true },
+  );
 
-  // Return appropriate interface based on API version
+  onUnmounted(() => {
+    zoomStatus.value = ZoomStatus.Completed;
+  });
+
   if (isLegacyAPI) {
-    return { zoomOut: legacyZoomOut };
+    return {
+      zoomOut: (options?: AnimationOptions) => {
+        zoomOut(options).catch((e) => logError('Error in legacy zoomOut:', e));
+      },
+    };
   }
 
   return {
@@ -723,7 +370,7 @@ export function useZoomOut(
     stopZooming,
     getCurrentZoom,
     getCurrentCamera,
-    zoomStatus: zoomStatus.value as Readonly<ZoomStatus>,
-    isZooming: isZooming.value,
+    zoomStatus: computed(() => zoomStatus.value),
+    isZooming,
   };
 }
