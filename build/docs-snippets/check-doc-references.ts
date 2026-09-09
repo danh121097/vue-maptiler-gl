@@ -38,8 +38,8 @@ const DIST_RE = /vue3-maptiler-gl(?:@[^/\s]+)?\/(dist\/[A-Za-z0-9._/-]+)/g;
 
 /**
  * The size of the test suite, as the overview states it, in either spelling:
- * "31 test files", or "218 tests across 31 files". The number that was there
- * said 107 across 19 files while the suite had grown to 31 — and the second
+ * "32 test files", or "223 tests across 32 files". The number that was there
+ * said 107 across 19 files while the suite had grown to 32 — and the second
  * spelling was the one the check did not read, which is how it stayed wrong.
  * Only the file count is asserted:
  * it is a glob, whereas the number of assertions is only knowable by running
@@ -132,8 +132,8 @@ export function checkReferences(
           ),
           ...[...line.matchAll(TEST_FILE_COUNT_RE)].map(
             (match): [string, string, number, string] => [
-              // Either spelling of the same claim: "31 test files", or the
-              // "218 tests across 31 files" form the roadmap uses, which went
+              // Either spelling of the same claim: "32 test files", or the
+              // "223 tests across 32 files" form the roadmap uses, which went
               // unchecked and sat at a stale 19 for a whole major.
               (match[1] ?? match[2])!,
               'test files',
