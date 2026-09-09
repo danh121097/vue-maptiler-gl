@@ -1,20 +1,20 @@
 # Getting Started
 
-Vue3 MapTiler GL is a comprehensive Vue 3 component library that provides an intuitive way to integrate interactive maps into your Vue applications using MapTiler GL JS.
+Vue3 MapTiler SDK is a comprehensive Vue 3 component library that provides an intuitive way to integrate interactive maps into your Vue applications using MapTiler SDK.
 
-## What is Vue3 MapTiler GL?
+## What is Vue3 MapTiler SDK?
 
-Vue3 MapTiler GL offers:
+Vue3 MapTiler SDK offers:
 
-- **10+ Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, PopUp, Image, and GeolocateControls
-- **15+ Composables** - For map management, layers, sources, controls, events, and utilities
+- **10+ Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, Popup, Image, and GeolocateControls
+- **38 Composables** - For map management, layers, sources, controls, events, and utilities
 - **Full TypeScript Support** - Comprehensive type definitions and interfaces
 - **Reactive Data Binding** - Seamless integration with Vue 3's reactivity system
 - **Performance Optimized** - Automatic resource cleanup and minimal bundle size
 
-## What is MapTiler GL JS?
+## What is MapTiler SDK?
 
-MapTiler GL JS is an open-source library for publishing maps on your websites. It's a fork of MapTiler GL JS and provides vector tile rendering with WebGL for high-performance, interactive maps.
+MapTiler SDK is an open-source library for publishing maps on your websites. It's a fork of MapTiler GL JS and provides vector tile rendering with WebGL for high-performance, interactive maps.
 
 ## Prerequisites
 
@@ -31,16 +31,20 @@ Choose your preferred package manager:
 
 ::: code-group
 
-```bash [yarn]
-yarn add vue3-maptiler-gl
+```bash [bun]
+bun add vue3-maptiler-gl @maptiler/sdk
 ```
 
 ```bash [npm]
-npm install vue3-maptiler-gl
+npm install vue3-maptiler-gl @maptiler/sdk
+```
+
+```bash [yarn]
+yarn add vue3-maptiler-gl @maptiler/sdk
 ```
 
 ```bash [pnpm]
-pnpm add vue3-maptiler-gl
+pnpm add vue3-maptiler-gl @maptiler/sdk
 ```
 
 :::
@@ -50,6 +54,7 @@ pnpm add vue3-maptiler-gl
 Don't forget to import the CSS:
 
 ```js
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 ```
 
@@ -73,10 +78,11 @@ Here's a simple example to get you started:
 <script setup>
 import { ref } from 'vue';
 import { MapTiler } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -117,12 +123,12 @@ Here's a more comprehensive example showcasing multiple components:
       </Marker>
 
       <!-- Popup -->
-      <PopUp :lnglat="popupPosition" :show="showPopup">
+      <Popup :lnglat="popupPosition" :show="showPopup">
         <div class="popup-content">
           <h3>Welcome!</h3>
           <p>This is an interactive map built with Vue 3</p>
         </div>
-      </PopUp>
+      </Popup>
 
       <!-- Geolocation Control -->
       <GeolocateControls position="top-right" @geolocate="onGeolocate" />
@@ -138,13 +144,14 @@ import {
   FillLayer,
   CircleLayer,
   Marker,
-  PopUp,
+  Popup,
   GeolocateControls,
 } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -203,7 +210,7 @@ function onGeolocate(data) {
 
 ## Using Composables
 
-Vue3 MapTiler GL also provides powerful composables for advanced map interactions:
+Vue3 MapTiler SDK also provides powerful composables for advanced map interactions:
 
 ```vue
 <script setup>
@@ -215,7 +222,7 @@ import {
 } from 'vue3-maptiler-gl';
 
 const mapContainer = ref();
-const mapStyle = ref('YOUR_STYLE');
+const mapStyle = ref('https://demotiles.maplibre.org/style.json');
 
 // Create map with composable
 const { mapInstance, setCenter, setZoom } = useCreateMapTiler(
@@ -234,7 +241,7 @@ const { flyTo } = useFlyTo({ map: mapInstance });
 useMapEventListener({
   map: mapInstance,
   event: 'click',
-  handler: (event) => {
+  on: (event) => {
     console.log('Map clicked at:', event.lngLat);
     flyTo({
       center: event.lngLat,
@@ -253,7 +260,7 @@ useMapEventListener({
 - **MapTiler** - Main map container with comprehensive event handling
 - **GeoJsonSource** - Reactive data source for GeoJSON data
 - **Layer Components** - FillLayer, CircleLayer, LineLayer, SymbolLayer
-- **Interactive Elements** - Marker, PopUp with custom content
+- **Interactive Elements** - Marker, Popup with custom content
 - **Controls** - GeolocateControls for user location
 - **Utilities** - Image management for map styles
 
@@ -264,7 +271,7 @@ useMapEventListener({
 - **Source Management** - `useCreateGeoJsonSource`, `useGeoJsonSource`
 - **Event Handling** - `useMapEventListener`, `useLayerEventListener`
 - **Animations** - `useFlyTo`, `useEaseTo`, `useJumpTo`
-- **Utilities** - `useBounds`, `useZoom`, `useLogger`
+- **Utilities** - `useFitBounds`, `useZoomTo`, `useLogger`
 
 ### 🎯 **TypeScript Support**
 

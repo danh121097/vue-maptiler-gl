@@ -1,0 +1,171 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  # Quality gate: format, lint, type-check, unit tests, and library build.
+  # Both deploy-docs and release depend on this passing.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Type check
+        run: bun run type-check
+
+      - name: Lint
+        run: bun run lint:check
+
+      # Coverage, not plain `test`: vitest.config.ts carries per-file
+      # thresholds set to the coverage each module actually had, so a change
+      # that reduces it fails here rather than landing quietly.
+      - name: Test
+        run: bun run test:coverage
+
+      - name: Build
+        run: bun run build
+
+      # Compiles every code block in docs/ and the READMEs against the dist/
+      # just built, so an example that names something the package does not
+      # export fails here instead of on a reader's machine.
+      - name: Check docs code blocks
+        run: bun run docs:check
+
+      - name: Verify dist output
+        run: |
+          test -f dist/index.js || exit 1
+          test -f dist/index.umd.cjs || exit 1
+          test -f dist/style.css || exit 1
+          test -f dist/maptiler-reexports.js || exit 1
+          # Barrels backing the ./components and ./composables subpaths. Rollup
+          # elides a pure re-export module unless it is declared a build entry,
+          # so these silently disappear if the entry list regresses.
+          test -f dist/components/index.js || exit 1
+          test -f dist/composables/index.js || exit 1
+          # npm strips every node_modules directory from a published tarball, so
+          # a bundled dependency emitted there would vanish on install.
+          test ! -d dist/node_modules || exit 1
+          # The `types` condition of every exports subpath.
+          test -f dist/index.d.ts || exit 1
+          test -f dist/maptiler-reexports.d.ts || exit 1
+          test -f dist/components/index.d.ts || exit 1
+          test -f dist/composables/index.d.ts || exit 1
+          # Sourcemaps are deliberately not published; the shipped JS carries no
+          # sourceMappingURL, so emitting maps again would only bloat the tarball.
+          test -z "$(find dist -name '*.map' -print -quit)" || exit 1
+          # This package ships its own rules only. If MapTiler's stylesheet gets
+          # re-bundled, or the UMD pass overwrites the ES pass's CSS with a
+          # narrower module graph, this catches it.
+          grep -q 'maptiler-container' dist/style.css || exit 1
+          test "$(wc -c < dist/style.css)" -lt 2000 || exit 1
+          # Every SFC leaves a one-line facade module (`Foo.vue2.js`) behind
+          # that nothing imports; the build drops those. One showing up again
+          # means the orphan-chunk plugin has stopped running.
+          test -z "$(find dist -name '*.vue[0-9]*.js' -print -quit)" || exit 1
+          echo "All dist files present"
+
+      # What npm would actually upload. `files` in package.json is an allow
+      # list, so anything inside dist/ ships — including test fixtures or
+      # sourcemaps that a config regression could start emitting there.
+      - name: Verify tarball contents
+        run: |
+          bun pm pack --dry-run | tee /tmp/pack.txt
+          ! grep -E '\.map$|__tests__|test-utils|node_modules' /tmp/pack.txt || exit 1
+          echo "Tarball contains only publishable files"
+
+  # Build the VitePress docs and deploy to Cloudflare Pages.
+  deploy-docs:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build documentation
+        run: bun run docs:build
+        env:
+          NODE_ENV: production
+
+      # Self-provision the Pages project on first run only; on later runs it already
+      # exists, so we skip creation cleanly instead of emitting an "already exists" error.
+      - name: Ensure Cloudflare Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if ! bunx wrangler pages project list | grep -q 'vue-maptiler-gl'; then
+            echo "Project not found — creating..."
+            bunx wrangler pages project create vue-maptiler-gl --production-branch=master
+          else
+            echo "Project already exists — skipping creation."
+          fi
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/.vitepress/dist --project-name=vue-maptiler-gl --branch=master
+
+  # Tag + GitHub release when package.json version has no matching tag yet.
+  # Depends only on test — a failed docs deploy must not block the release.
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Get version from package.json
+        id: version
+        run: echo "version=v$(node -p 'require("./package.json").version')" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check
+        run: |
+          if git rev-parse "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      # The changelog is written locally by `bun run changelog` and lands in the
+      # same commit as the version bump. CI does not write to the repository:
+      # `master` requires pull requests, so a push from github-actions[bot] is
+      # rejected with GH006 — which used to fail this job before it could tag
+      # or release anything.
+      - name: Create GitHub Release
+        if: steps.check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          generate_release_notes: true

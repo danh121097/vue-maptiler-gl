@@ -9,7 +9,7 @@ Create areas with fill styling:
 ```vue
 <template>
   <MapTiler :options="mapOptions" style="height: 400px;">
-    <GeoJsonSource :data="polygonData" source-id="polygons">
+    <GeoJsonSource :data="polygonData" id="polygons">
       <FillLayer :style="fillStyle" />
     </GeoJsonSource>
   </MapTiler>
@@ -20,7 +20,7 @@ import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, FillLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128],
   zoom: 10,
 });
@@ -70,7 +70,7 @@ Display points as circles with customizable styling:
     </div>
 
     <MapTiler :options="mapOptions" style="height: 400px;">
-      <GeoJsonSource :data="pointData" source-id="points">
+      <GeoJsonSource :data="pointData" id="points">
         <CircleLayer :style="circleStyle" @click="onCircleClick" />
       </GeoJsonSource>
     </MapTiler>
@@ -82,7 +82,7 @@ import { ref, computed } from 'vue';
 import { MapTiler, GeoJsonSource, CircleLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -168,7 +168,7 @@ Create lines and paths:
     </div>
 
     <MapTiler :options="mapOptions" style="height: 400px;">
-      <GeoJsonSource :data="lineData" source-id="route">
+      <GeoJsonSource :data="lineData" id="route">
         <LineLayer :style="lineStyle" />
       </GeoJsonSource>
     </MapTiler>
@@ -180,7 +180,7 @@ import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, LineLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128],
   zoom: 12,
 });
@@ -263,7 +263,7 @@ Add text and icon symbols:
 ```vue
 <template>
   <MapTiler :options="mapOptions" style="height: 400px;">
-    <GeoJsonSource :data="symbolData" source-id="symbols">
+    <GeoJsonSource :data="symbolData" id="symbols">
       <SymbolLayer :style="symbolStyle" />
     </GeoJsonSource>
   </MapTiler>
@@ -274,7 +274,7 @@ import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, SymbolLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128],
   zoom: 10,
 });
@@ -345,7 +345,7 @@ Combine different layer types:
     </div>
 
     <MapTiler :options="mapOptions" style="height: 400px;">
-      <GeoJsonSource :data="combinedData" source-id="combined">
+      <GeoJsonSource :data="combinedData" id="combined">
         <FillLayer v-if="showFill" :style="fillStyle" />
         <CircleLayer v-if="showCircles" :style="circleStyle" />
         <SymbolLayer v-if="showLabels" :style="symbolStyle" />
@@ -365,7 +365,7 @@ import {
 } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128],
   zoom: 11,
 });

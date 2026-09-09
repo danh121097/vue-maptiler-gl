@@ -1,0 +1,119 @@
+import { describe, expect, it } from 'vitest';
+import {
+  extractTemplateAttributes,
+  toCamelCase,
+} from '../extract-template-attributes';
+
+const COMPONENTS = new Set(['MapTiler', 'Marker', 'GeoJsonSource']);
+
+function attributes(code: string) {
+  return extractTemplateAttributes(code, COMPONENTS).map((attribute) => [
+    attribute.component,
+    attribute.prop,
+    attribute.line,
+  ]);
+}
+
+describe('extractTemplateAttributes', () => {
+  it('maps a kebab-case binding to the prop name Vue puts on $props', () => {
+    expect(
+      attributes(`<template>
+  <GeoJsonSource :source-id="id" />
+</template>`),
+    ).toEqual([['GeoJsonSource', 'sourceId', 1]]);
+  });
+
+  it('maps a handler to its emit name', () => {
+    expect(
+      attributes(`<template>
+  <MapTiler @map-load="onLoad" />
+</template>`),
+    ).toEqual([['MapTiler', 'onMapLoad', 1]]);
+  });
+
+  it('leaves native DOM events alone, since fallthrough makes them real', () => {
+    expect(
+      attributes(`<template>
+  <Marker @click="onClick" @dblclick="onOpen" />
+</template>`),
+    ).toEqual([]);
+  });
+
+  it('reads past a `>` inside an attribute value', () => {
+    expect(
+      attributes(`<template>
+  <MapTiler :register="(a) => a.isMapReady" :debug="true" />
+</template>`),
+    ).toEqual([
+      ['MapTiler', 'register', 1],
+      ['MapTiler', 'debug', 1],
+    ]);
+  });
+
+  it('never reads a name out of an attribute value', () => {
+    // `style="width: 100%"` would otherwise report a `width` prop, and
+    // `:draggable="true"` a `true` one.
+    expect(
+      attributes(`<template>
+  <Marker style="width: 100%" :draggable="true" />
+</template>`),
+    ).toEqual([['Marker', 'draggable', 1]]);
+  });
+
+  it('ignores the script block, where `<Marker` is a type argument', () => {
+    expect(
+      attributes(`<template>
+  <MapTiler :options="o" />
+</template>
+
+<script setup lang="ts">
+const marker = ref<Marker | null>(null);
+</script>`),
+    ).toEqual([['MapTiler', 'options', 1]]);
+  });
+
+  it('reads a fragment that is not wrapped in a template', () => {
+    expect(attributes('<GeoJsonSource :data="features" />')).toEqual([
+      ['GeoJsonSource', 'data', 0],
+    ]);
+  });
+
+  it('keeps the line of a tag written after the script block', () => {
+    expect(
+      attributes(`<script setup>
+const features = ref();
+</script>
+
+<GeoJsonSource :data="features" />`),
+    ).toEqual([['GeoJsonSource', 'data', 4]]);
+  });
+
+  it('ignores attributes that are legal on any component', () => {
+    expect(
+      attributes(`<template>
+  <Marker class="a" style="b" ref="c" v-if="d" data-x="e" />
+</template>`),
+    ).toEqual([]);
+  });
+
+  it('counts the line of each attribute, not of its tag', () => {
+    expect(
+      attributes(`<template>
+  <MapTiler
+    :options="o"
+    :debug="true"
+  />
+</template>`),
+    ).toEqual([
+      ['MapTiler', 'options', 2],
+      ['MapTiler', 'debug', 3],
+    ]);
+  });
+});
+
+describe('toCamelCase', () => {
+  it('turns a kebab-case attribute into its prop name', () => {
+    expect(toCamelCase('cluster-max-zoom')).toBe('clusterMaxZoom');
+    expect(toCamelCase('lnglat')).toBe('lnglat');
+  });
+});

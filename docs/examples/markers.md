@@ -20,7 +20,7 @@ import { ref } from 'vue';
 import { MapTiler, Marker } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -62,7 +62,7 @@ import { ref } from 'vue';
 import { MapTiler, Marker } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -123,7 +123,7 @@ import { ref } from 'vue';
 import { MapTiler, Marker } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 1,
 });
@@ -199,7 +199,7 @@ Combine markers with popups for rich interactions:
         </div>
       </Marker>
 
-      <PopUp
+      <Popup
         v-if="selectedLocation?.id === location.id"
         :lnglat="location.coordinates"
         :show="!!selectedLocation"
@@ -213,17 +213,17 @@ Combine markers with popups for rich interactions:
             <button @click="saveLocation(location)">Save</button>
           </div>
         </div>
-      </PopUp>
+      </Popup>
     </template>
   </MapTiler>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { MapTiler, Marker, PopUp } from 'vue3-maptiler-gl';
+import { MapTiler, Marker, Popup } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128],
   zoom: 10,
 });
@@ -378,7 +378,7 @@ import { ref } from 'vue';
 import { MapTiler, Marker } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -492,5 +492,5 @@ function clearMarkers() {
 ## Related APIs
 
 - [Marker Component](/api/components#marker)
-- [PopUp Component](/api/components#popup)
-- [Marker Events](/api/types#marker-events)
+- [Popup Component](/api/components#popup)
+- [Event Handler Types](/api/types#event-handler-types)

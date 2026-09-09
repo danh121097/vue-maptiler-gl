@@ -1,12 +1,12 @@
 # Configuration
 
-Vue3 MapTiler GL provides extensive configuration options for maps, components, and composables. This guide covers the most common configuration scenarios.
+Vue3 MapTiler SDK provides extensive configuration options for maps, components, and composables. This guide covers the most common configuration scenarios.
 
 ## Map Configuration
 
 ### Basic Map Options
 
-The `MapTiler` component accepts a comprehensive `options` prop that mirrors MapTiler GL's `MapOptions`:
+The `MapTiler` component accepts a comprehensive `options` prop that mirrors MapTiler SDK's `MapOptions`:
 
 ```vue
 <template>
@@ -19,7 +19,7 @@ import { MapTiler } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
   // Style
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
 
   // Initial view
   center: [0, 0],
@@ -69,20 +69,23 @@ const mapOptions = ref({
 
 ### Advanced Configuration
 
+::: warning `style` must be a URL here, not an object
+The MapTiler SDK accepts a URL string, a MapTiler Cloud style id or a
+`ReferenceMapStyle` as the constructor's `style`, but **not** an inline
+`StyleSpecification` object: the map silently never loads, `getStyle()` returns
+`undefined`, and nothing throws. To use an object, construct the map with a URL
+and then call `setStyle(object)`. See
+[Migration from v1](/guide/migration-v1-to-v2).
+:::
+
 ```vue
 <script setup>
 import { ref } from 'vue';
 
 const advancedMapOptions = ref({
-  style: {
-    version: 8,
-    sources: {},
-    layers: [],
-    glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
-    sprite: 'https://sprites.example.com/sprite',
-  },
+  style: 'https://demotiles.maplibre.org/style.json',
 
-  // Custom projection (MapTiler GL v3+)
+  // Custom projection (MapTiler SDK v3+)
   projection: 'mercator',
 
   // Terrain
@@ -148,6 +151,22 @@ const advancedMapOptions = ref({
 
 <script setup>
 import { ref } from 'vue';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const geoJsonData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
+
+const fillStyle = ref({
+  'fill-color': '#41B883',
+  'fill-opacity': 0.6,
+});
 
 const sourceOptions = ref({
   // Clustering
@@ -218,6 +237,11 @@ function onSourceError(error) {
 
 <script setup>
 import { ref } from 'vue';
+
+const data = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
 
 // Layer styles with expressions
 const fillStyle = ref({
@@ -304,7 +328,13 @@ const showLabels = ref(true);
 
 <script setup>
 import { ref } from 'vue';
-import { Popup } from '@maptiler/sdk';
+import { MapTilerPopup } from 'vue3-maptiler-gl/maptiler';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
 
 const markerPosition = ref([0, 0]);
 
@@ -321,7 +351,7 @@ const markerOptions = ref({
 });
 
 const markerPopup = ref(
-  new Popup({
+  new MapTilerPopup({
     closeButton: true,
     closeOnClick: false,
     anchor: 'bottom',
@@ -367,7 +397,7 @@ import {
 } from 'vue3-maptiler-gl';
 
 const mapContainer = ref();
-const mapStyle = ref('YOUR_STYLE');
+const mapStyle = ref('https://demotiles.maplibre.org/style.json');
 
 // Enhanced map creation with configuration
 const {
@@ -401,7 +431,7 @@ const { flyTo, isFlying } = useFlyTo({
 useMapEventListener({
   map: mapInstance,
   event: 'click',
-  handler: (event) => {
+  on: (event) => {
     flyTo({
       center: event.lngLat,
       zoom: 12,
@@ -462,9 +492,9 @@ const { getLayer, setStyle, setFilter } = useCreateFillLayer({
 // Layer event configuration
 useLayerEventListener({
   map: mapInstance,
-  layerId: 'fill-layer',
+  layer: 'fill-layer',
   event: 'click',
-  handler: (event) => {
+  on: (event) => {
     console.log('Layer clicked:', event.features[0]);
 
     // Update layer style on click
@@ -489,7 +519,7 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
   plugins: [vue()],
   define: {
-    __VUE_MAPTILER_DEBUG__: JSON.stringify(
+    __VUE_MAPLIBRE_DEBUG__: JSON.stringify(
       process.env.NODE_ENV === 'development',
     ),
   },
@@ -510,6 +540,7 @@ export default defineConfig({
 // main.js
 import { createApp } from 'vue';
 import VueMapTilerGl from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const app = createApp(App);
@@ -521,14 +552,14 @@ app.use(VueMapTilerGl, {
 
   // Default map options
   defaultMapOptions: {
-    style: 'YOUR_STYLE',
+    style: 'https://demotiles.maplibre.org/style.json',
     center: [0, 0],
     zoom: 2,
   },
 
   // Global error handler
   onError: (error, context) => {
-    console.error('Vue MapTiler GL Error:', error, context);
+    console.error('Vue MapTiler SDK Error:', error, context);
     // Send to error reporting service
   },
 });
@@ -536,4 +567,4 @@ app.use(VueMapTilerGl, {
 app.mount('#app');
 ```
 
-This configuration guide covers the most common scenarios for customizing Vue3 MapTiler GL components and composables. For more advanced configurations, refer to the [API documentation](/api/components) and [MapTiler GL JS documentation](https://docs.maptiler.com/).
+This configuration guide covers the most common scenarios for customizing Vue3 MapTiler SDK components and composables. For more advanced configurations, refer to the [API documentation](/api/components) and [MapTiler SDK documentation](https://docs.maptiler.com/sdk-js/api/).

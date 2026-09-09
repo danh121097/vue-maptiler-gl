@@ -2,37 +2,66 @@
 
 ## Package Manager Installation
 
-Vue3 MapTiler GL is available on npm and can be installed using your preferred package manager. The package includes all dependencies and is self-contained with bundled CSS.
+Vue3 MapTiler SDK is available on npm and can be installed using your preferred package manager.
 
-### Using Yarn (Recommended)
+Every command below installs two packages, because `@maptiler/sdk` is a peer dependency since v6. npm and Bun would pull it in on their own, but Yarn and pnpm would not, and naming it explicitly is the one command that is correct everywhere — it also pins the MapTiler version your app runs against.
 
-```bash
-yarn add vue3-maptiler-gl
+::: tip Why a peer dependency
+This package re-exports MapTiler's own classes and types, and your app imports MapTiler's stylesheet directly. If both your app and this package resolved their own copy of `@maptiler/sdk`, a `Map` produced by one would fail an `instanceof` check in the other and two copies of the runtime would ship. Declaring it as a peer means there is exactly one, on a version you choose.
+:::
+
+Since v6 the two stylesheets are separate: this package ships only its own rules, and you import MapTiler's own stylesheet the way MapTiler documents it. See [Setup in Vue 3](#setup-in-vue-3).
+
+::: warning pnpm
+pnpm's isolated `node_modules` does not expose a dependency your app did not install itself, so `import '@maptiler/sdk/dist/maptiler-sdk.css'` fails unless `@maptiler/sdk` is in your own `package.json`. This has been true since v6 split the stylesheets, independently of the peer dependency.
+:::
+
+::: code-group
+
+```bash [bun]
+bun add vue3-maptiler-gl @maptiler/sdk
 ```
 
-### Using npm
-
-```bash
-npm install vue3-maptiler-gl
+```bash [npm]
+npm install vue3-maptiler-gl @maptiler/sdk
 ```
 
-### Using pnpm
-
-```bash
-pnpm add vue3-maptiler-gl
+```bash [yarn]
+yarn add vue3-maptiler-gl @maptiler/sdk
 ```
+
+```bash [pnpm]
+pnpm add vue3-maptiler-gl @maptiler/sdk
+```
+
+:::
 
 ## CDN Installation
 
-You can also use Vue MapTiler GL directly from a CDN:
+You can also use Vue MapTiler SDK directly from a CDN, but only as **ES modules**.
+
+::: warning No UMD / classic `<script>` build
+`@maptiler/sdk` ships an ES module only — its `package.json` exposes a single
+`"import"` condition and no UMD bundle, so there is no global `maptilersdk`
+script to load. That also makes this package's own `dist/index.umd.cjs`
+unusable: `require()`-ing it fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` when it
+reaches for the SDK. Use the ESM entry points below, or a bundler.
+:::
 
 ```html
-<!-- Vue MapTiler GL (includes MapTiler GL JS) -->
-<script src="https://unpkg.com/vue3-maptiler-gl@latest/dist/index.umd.cjs"></script>
+<link
+  href="https://unpkg.com/@maptiler/sdk@latest/dist/maptiler-sdk.css"
+  rel="stylesheet"
+/>
 <link
   href="https://unpkg.com/vue3-maptiler-gl@latest/dist/style.css"
   rel="stylesheet"
 />
+
+<script type="module">
+  import * as maptilersdk from 'https://unpkg.com/@maptiler/sdk@latest/dist/maptiler-sdk.mjs';
+  import { MapTiler } from 'https://unpkg.com/vue3-maptiler-gl@latest/dist/index.js';
+</script>
 ```
 
 ## Setup in Vue 3
@@ -44,6 +73,7 @@ Register the components globally in your main.js:
 ```js
 import { createApp } from 'vue';
 import VueMapTilerGl from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const app = createApp(App);
@@ -63,8 +93,9 @@ import {
   FillLayer,
   CircleLayer,
   Marker,
-  PopUp,
+  Popup,
 } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 </script>
 ```
@@ -87,7 +118,7 @@ import {
 
   // Interactive Components
   Marker,
-  PopUp,
+  Popup,
 
   // Utility Components
   Image,
@@ -108,22 +139,25 @@ import {
   useFlyTo,
   useEaseTo,
   useJumpTo,
-  useBounds,
-  useZoom,
+  useFitBounds,
+  useCameraForBounds,
+  useZoomTo,
+  useZoomIn,
+  useZoomOut,
   useLogger,
 } from 'vue3-maptiler-gl';
 ```
 
 ## TypeScript Support
 
-Vue MapTiler GL includes full TypeScript support. If you're using TypeScript, you'll get automatic type checking and IntelliSense support.
+Vue MapTiler SDK includes full TypeScript support. If you're using TypeScript, you'll get automatic type checking and IntelliSense support.
 
 ### Type Definitions
 
 The package includes comprehensive type definitions for:
 
 - All component props and events
-- MapTiler GL JS types
+- MapTiler SDK types
 - Composable return types
 - Configuration options
 
@@ -141,7 +175,9 @@ import type {
 } from 'vue3-maptiler-gl';
 
 const center = ref<LngLatLike>([0, 0]);
-const mapStyle = ref<string | StyleSpecification>('YOUR_STYLE');
+const mapStyle = ref<string | StyleSpecification>(
+  'https://demotiles.maplibre.org/style.json',
+);
 
 const geoJsonData = ref<GeoJSONSourceSpecification['data']>({
   type: 'FeatureCollection',
@@ -157,21 +193,16 @@ const fillStyle = ref<FillLayerStyle>({
 
 ### Type Definitions
 
-Vue3 MapTiler GL exports comprehensive TypeScript definitions:
+Vue3 MapTiler SDK exports comprehensive TypeScript definitions:
+
+Component prop types are **not** exported. Each component declares its props
+interface locally, so `MapTilerProps`, `FillLayerProps` and the rest cannot be
+imported — use `defineProps` inference in your own wrapper, or read the shapes
+in the [components API reference](/api/components).
+
+What is exported:
 
 ```typescript
-// Component Props Types
-import type {
-  MapTilerProps,
-  GeoJsonSourceProps,
-  FillLayerProps,
-  CircleLayerProps,
-  LineLayerProps,
-  SymbolLayerProps,
-  MarkerProps,
-  PopUpProps,
-} from 'vue3-maptiler-gl';
-
 // Style Types
 import type {
   FillLayerStyle,
@@ -187,7 +218,7 @@ import type {
   CreateLayerActions,
 } from 'vue3-maptiler-gl';
 
-// Re-exported MapTiler GL Types
+// Re-exported MapTiler SDK Types
 import type {
   Map,
   LngLat,
@@ -197,6 +228,28 @@ import type {
   GeoJSONSourceSpecification,
 } from 'vue3-maptiler-gl';
 ```
+
+Raw MapTiler SDK **classes** come from the `/maptiler` subpath rather than the root. Keeping them off the root is what lets a bundler drop the MapTiler runtime when you only use components:
+
+```ts
+import {
+  Map,
+  NavigationControl,
+  GeolocateControl,
+  MapTilerMarker,
+} from 'vue3-maptiler-gl/maptiler';
+```
+
+`Marker` and `Popup` are already used by Vue components, so the raw MapTiler SDK classes are available as `MapTilerMarker`, `MapTilerPopup`, or under the `maptilersdk` namespace:
+
+```ts
+import { MapTilerPopup, maptilersdk } from 'vue3-maptiler-gl/maptiler';
+
+const popup = new MapTilerPopup();
+const marker = new maptilersdk.Marker();
+```
+
+Importing them directly from `@maptiler/sdk` works just as well.
 
 ## Vite Configuration
 
@@ -210,9 +263,24 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
   plugins: [vue()],
   optimizeDeps: {
-    include: ['maptiler-gl'],
+    include: ['@maptiler/sdk'],
   },
 });
+```
+
+## Webpack Configuration
+
+For Webpack users, you might need to configure module resolution:
+
+```js
+// webpack.config.js
+module.exports = {
+  resolve: {
+    alias: {
+      '@maptiler/sdk': '@maptiler/sdk/dist/maptiler-sdk.mjs',
+    },
+  },
+};
 ```
 
 ## Nuxt 3 Setup
@@ -220,7 +288,9 @@ export default defineConfig({
 For Nuxt 3 applications, create a plugin:
 
 ```js
+// plugins/vue-maptiler-gl.client.js
 import VueMapTilerGl from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 export default defineNuxtPlugin((nuxtApp) => {
@@ -232,13 +302,13 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 ### Common Issues
 
-1. **CSS not loading**: Make sure to import the MapTiler GL CSS file
-2. **Module not found**: Ensure both `vue3-maptiler-gl` and `@maptiler/sdk` are installed
+1. **CSS not loading**: Make sure to import both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
+2. **Module not found**: Reinstall `vue3-maptiler-gl` so its `@maptiler/sdk` dependency is present in `node_modules`
 3. **TypeScript errors**: Update your TypeScript configuration to include the package types
 
 ### Browser Compatibility
 
-Vue MapTiler GL supports all modern browsers that support:
+Vue MapTiler SDK supports all modern browsers that support:
 
 - ES6+ features
 - WebGL

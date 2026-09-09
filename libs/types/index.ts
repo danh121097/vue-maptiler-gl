@@ -192,7 +192,7 @@ export interface Layout {
 /**
  * MapTiler SDK expression type.
  * Intentionally `any` — MapTiler doesn't export strict expression types.
- * @see https://maptiler.org/maptiler-style-spec/expressions/
+ * @see https://maplibre.org/maplibre-style-spec/expressions/
  */
 export type Expressions = any;
 
@@ -211,7 +211,7 @@ export interface StyleFunction {
 
 /**
  * Screen-space offset `[x, y]` in pixels applied to a layer's geometry.
- * @see https://maptiler.org/maptiler-style-spec/layers/
+ * @see https://maplibre.org/maplibre-style-spec/layers/
  */
 export type Translate = [number, number];
 
