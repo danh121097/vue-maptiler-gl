@@ -4,15 +4,20 @@
 
 [Nuxt](https://nuxt.com) module for [vue3-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl) — interactive maps with MapTiler SDK.
 
-**📖 Full documentation: [vue-maptiler-gl.pages.dev](https://vue-maptiler-gl.pages.dev/)**
-
 ## Features
 
-- Auto-import all 10 map components (MapTiler, GeoJsonSource, FillLayer, etc.)
-- Auto-import 38 composables (useFlyTo, useMapEventListener, etc.)
-- Auto-import CSS — no manual style import needed
-- SSR-safe — components register client-only, composables have browser guards
+- Auto-imports all 10 map components (MapTiler, GeoJsonSource, FillLayer, etc.)
+- Auto-imports all 38 composables (useFlyTo, useMapEventListener, etc.)
+- Auto-imports CSS — both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
+- SSR-safe — components register client-only, `@maptiler/sdk` is kept out of the server bundle
 - Zero configuration required
+
+`vue3-maptiler-gl` and `@maptiler/sdk` are dependencies of this module, so installing it is enough — there is nothing else to add to your app.
+
+> **API key:** optional. Any `http(s)` style URL is passed through untouched, so a keyless
+> style works with no MapTiler account. You need a key only for `maptiler://` styles, Cloud
+> style ids such as `streets-v2`, or `api.maptiler.com` URLs. Set it from a client plugin with
+> `useMapTilerConfig({ apiKey })` — it is auto-imported like every other composable.
 
 ## Installation
 
@@ -40,28 +45,9 @@ yarn add nuxt-maptiler-gl
 pnpm add nuxt-maptiler-gl
 ```
 
-## MapTiler API key
-
-The key is **optional**. Any `http(s)` style URL is passed through untouched, so a
-self-hosted or third-party keyless style works with no MapTiler account at all. You
-need a key only for `maptiler://` styles, MapTiler Cloud style ids such as
-`streets-v2`, or `api.maptiler.com` URLs.
-
-Set it in a client plugin, before any map is created:
-
-```ts
-// plugins/maptiler.client.ts
-export default defineNuxtPlugin(() => {
-  useMapTilerConfig({ apiKey: 'YOUR_MAPTILER_CLOUD_KEY' });
-});
-```
-
-`useMapTilerConfig` is auto-imported like every other composable. See
-[Configuration](https://vue-maptiler-gl.pages.dev/guide/configuration).
-
 ## Setup
 
-Add to `nuxt.config.ts`:
+Add to `nuxt.config.ts`. The config key is `maptiler`, not the module name:
 
 ```typescript
 export default defineNuxtConfig({
@@ -110,9 +96,9 @@ const circleStyle = ref({ 'circle-radius': 6, 'circle-color': '#007cbf' });
 ```
 
 > **The SDK brings its own controls.** `MapOptions.navigationControl` and
-> `MapOptions.geolocateControl` both default to `true`, so a bare `<MapTiler>` already
-> shows zoom, compass and locate buttons. Pass `navigationControl: false` /
-> `geolocateControl: false` in `:options` when you place your own.
+> `MapOptions.geolocateControl` both default to `true`, where MapLibre adds none, so a bare
+> `<MapTiler>` already shows zoom, compass and locate buttons. Pass
+> `navigationControl: false` / `geolocateControl: false` in `:options` when you place your own.
 
 ## Auto-imported Components
 
@@ -131,10 +117,21 @@ const circleStyle = ref({ 'circle-radius': 6, 'circle-color': '#007cbf' });
 
 ## Auto-imported Composables
 
-All 38 composables from vue3-maptiler-gl are auto-imported:
-`useCreateMapTiler`, `useFlyTo`, `useEaseTo`, `useJumpTo`, `useMapEventListener`, etc.
-The full list with signatures is in the
-[Composables API](https://vue-maptiler-gl.pages.dev/api/composables).
+All 38 composables from vue3-maptiler-gl are auto-imported — `useCreateMapTiler`,
+`useMapTiler`, `useFlyTo`, `useEaseTo`, `useJumpTo`, `useMapEventListener`,
+`useCreateGeoJsonSource` and the rest. Set `prefix` to namespace them: with
+`prefix: 'map'` they are imported as `mapUseFlyTo`, `mapUseMapEventListener`, and
+so on.
+
+The full reference lives at
+[vue-maptiler-gl.pages.dev/api/composables](https://vue-maptiler-gl.pages.dev/api/composables).
+
+## Documentation
+
+- [SSR / Nuxt guide](https://vue-maptiler-gl.pages.dev/guide/ssr-nuxt) — what this module configures, and how to use it without the module
+- [Components API](https://vue-maptiler-gl.pages.dev/api/components)
+- [Composables API](https://vue-maptiler-gl.pages.dev/api/composables)
+- [Examples](https://vue-maptiler-gl.pages.dev/examples/)
 
 ## Releasing
 
