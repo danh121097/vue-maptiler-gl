@@ -6,7 +6,7 @@ Vue3 MapTiler SDK is a comprehensive Vue 3 component library that provides an in
 
 Vue3 MapTiler SDK offers:
 
-- **10+ Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, Popup, Image, and GeolocateControls
+- **10 Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, Popup, Image, and GeolocateControls
 - **38 Composables** - For map management, layers, sources, controls, events, and utilities
 - **Full TypeScript Support** - Comprehensive type definitions and interfaces
 - **Reactive Data Binding** - Seamless integration with Vue 3's reactivity system

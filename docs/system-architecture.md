@@ -187,7 +187,7 @@ kebab-case strings, so they are readable in devtools.
 - `LayerStatus`, `LayerManagementStatus`, `SourceStatus`, `GeoJsonSourceStatus` — layers and sources
 - `MarkerStatus`, `PopupStatus`, `ImageStatus` — overlays
 
-Since v6 every composable returns its status as a `ComputedRef`, so a consumer
+Since v2 every composable returns its status as a `ComputedRef`, so a consumer
 watching one sees it change. Collapsing these onto a single shared shape is a
 7.0 candidate — see [`project-roadmap.md`](./project-roadmap.md).
 

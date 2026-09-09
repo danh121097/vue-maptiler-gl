@@ -85,7 +85,7 @@ callback props are `onGeolocateSuccess`, `onGeolocateError`, `onTrackingStart`,
 
 ## MapTiler's own controls
 
-Import the class from the `vue3-maptiler-gl/maptiler` subpath. Since v6 the
+Import the class from the `vue3-maptiler-gl/maptiler` subpath. Since v2 the
 runtime lives there rather than at the package root, so importing one component
 does not pin the whole MapTiler runtime into your bundle.
 

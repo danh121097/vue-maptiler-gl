@@ -5,14 +5,14 @@
 **vue3-maptiler-gl** is a comprehensive Vue 3 component library for MapTiler SDK with 10 components, 38 composables, full TypeScript support, and Nuxt integration.
 
 **Repository**: [danh121097/vue-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl)
-**Main Package**: `vue3-maptiler-gl@6.0.1` (npm)
-**Nuxt Module**: `nuxt-maptiler-gl@2.0.0` (npm)
+**Main Package**: `vue3-maptiler-gl@2.0.1` (npm)
+**Nuxt Module**: `nuxt-maptiler-gl@2.0.1` (npm)
 
 ## Directory Structure
 
 ```
 vue-maptiler-gl/ (root)
-├── libs/                          # Main library source (v5)
+├── libs/                          # Main library source (v2)
 │   ├── components/                # Vue 3 components
 │   │   ├── MapTiler.vue          # Root map component
 │   │   ├── GeoJsonSource.vue      # GeoJSON data source
@@ -91,7 +91,7 @@ vue-maptiler-gl/ (root)
 │   ├── style.css                  # Component styles (bundled)
 │   ├── index.ts                   # Main library export
 │   └── test-utils.ts              # Test utilities
-├── nuxt/                          # Nuxt module (v1.0.0)
+├── nuxt/                          # Nuxt module (v2.0.1)
 │   ├── src/
 │   │   ├── module.ts              # Nuxt module setup
 │   │   └── runtime/
@@ -374,7 +374,7 @@ All via factory with adapter pattern:
 - `AnyLayout` - Union of all layout types
 - `AnyPaint` - Union of all paint types
 
-### Event Handler Types (v5+)
+### Event Handler Types (v2+)
 
 ```typescript
 export type MapClickHandler = (e: MapMouseEvent) => void;
@@ -403,14 +403,14 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 **Main Package** (`libs/`):
 
 - **Name**: `vue3-maptiler-gl`
-- **Version**: `2.0.0`
+- **Version**: `2.0.1`
 - **Main**: `dist/index.js` (the package is ESM-only)
 - **Exports**: Named exports, subpaths for components/composables
 
 **Nuxt Module** (`nuxt/`):
 
 - **Name**: `nuxt-maptiler-gl`
-- **Version**: `2.0.0`
+- **Version**: `2.0.1`
 - **Auto-imports**: Components and composables
 - **Features**: CSS auto-inject, SSR support
 

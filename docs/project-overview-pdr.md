@@ -14,17 +14,17 @@ Empower Vue 3 developers to build high-performance, interactive maps with minima
 - **Framework integration** - First-class Nuxt support with SSR out of the box
 - **Zero performance compromise** - Optimized bundle size, memory management, and rendering
 
-## Current Release: v2.0.0
+## Current Release: v2.0.1
 
 ### Release Summary
 
-**v2.0.0** rebuilds this package on the API of `vue3-maplibre-gl` v6, keeping
-the MapTiler SDK as the engine. It is the first release with breaking API
+**v2.0.0** rebuilt this package on the API of `vue3-maplibre-gl` v6, keeping
+the MapTiler SDK as the engine. It was the first release with breaking API
 changes: composables now return refs instead of values unwrapped once at setup,
 so a consumer reading a status sees it change; `@maptiler/sdk` moved to
 `peerDependencies`; and the package stopped shipping a stylesheet of its own
-that consumers had not asked for. npm carries 1.0.0 and 1.0.1; v2.0.0 is not
-published yet.
+that consumers had not asked for. **v2.0.1** is the published latest; it changed
+only the npm landing-page READMEs. npm carries 1.0.0, 1.0.1, 2.0.0 and 2.0.1.
 
 Consumer-facing detail is in [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md),
 which folds that whole history into the one upgrade this package's users actually make.
@@ -37,9 +37,9 @@ which folds that whole history into the one upgrade this package's users actuall
 | **Components**    | 10 fully-featured components with reactive data binding                                                          |
 | **Composables**   | 38 composables for map management, animations, and utilities                                                     |
 | **TypeScript**    | Comprehensive type definitions with event handler types                                                          |
-| **Correctness**   | v6 fixed reactive status, camera promise settlement, listener attachment ordering, and post-load error recovery  |
+| **Correctness**   | v2 fixed reactive status, camera promise settlement, listener attachment ordering, and post-load error recovery  |
 | **SSR Support**   | Full Nuxt SSR/SSG compatibility with browser guards                                                              |
-| **Nuxt Module**   | nuxt-maptiler-gl v2.0.0, auto-importing all 38 composables                                                       |
+| **Nuxt Module**   | nuxt-maptiler-gl v2.0.1, auto-importing all 38 composables                                                       |
 | **Testing**       | 219 tests across 31 files, with a coverage ratchet in CI                                                         |
 | **Documentation** | VitePress docs with API reference, guides, and examples                                                          |
 
@@ -146,7 +146,7 @@ which folds that whole history into the one upgrade this package's users actuall
 
 ### Core Patterns
 
-#### Factory-Based Architecture (v5)
+#### Factory-Based Architecture (v2)
 
 The library uses three key factory functions to eliminate code duplication:
 
@@ -246,7 +246,6 @@ components and composables it imports rather than the figure above.
 ### Git Workflow
 
 - **Main branch**: `master`, protected — changes land through pull requests
-- **Maintenance branches**: `v3`, `v4`, `v5` for prior major lines
 - **Commits**: Conventional commits with scope and emoji
 - **PR reviews**: Required before merge to main
 
