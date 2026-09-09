@@ -1,6 +1,6 @@
 # Basic Usage
 
-Learn how to use Vue MapTiler GL components and composables in your Vue 3 applications.
+Learn how to use Vue MapTiler SDK components and composables in your Vue 3 applications.
 
 ## Creating Your First Map
 
@@ -18,10 +18,11 @@ The most basic usage involves creating a map with the `MapTiler` component:
 <script setup>
 import { ref } from 'vue';
 import { MapTiler } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -39,7 +40,7 @@ Use the `GeoJsonSource` component to add data to your map:
 ```vue
 <template>
   <MapTiler :options="mapOptions" style="height: 400px;">
-    <GeoJsonSource :data="geoJsonData" source-id="my-data">
+    <GeoJsonSource :data="geoJsonData" id="my-data">
       <FillLayer :style="fillStyle" />
       <CircleLayer :style="circleStyle" />
     </GeoJsonSource>
@@ -56,7 +57,7 @@ import {
 } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -100,21 +101,21 @@ Add interactive markers and popups to your map:
       <div class="custom-marker">📍</div>
     </Marker>
 
-    <PopUp :lnglat="popupLocation" :show="showPopup" @close="showPopup = false">
+    <Popup :lnglat="popupLocation" :show="showPopup" @close="showPopup = false">
       <div class="popup-content">
         <h3>Hello World!</h3>
         <p>This is a popup at {{ popupLocation }}</p>
       </div>
-    </PopUp>
+    </Popup>
   </MapTiler>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { MapTiler, Marker, PopUp } from 'vue3-maptiler-gl';
+import { MapTiler, Marker, Popup } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -160,30 +161,42 @@ For more advanced functionality, use the provided composables:
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import {
   MapTiler,
-  useCreateMapTiler,
   useFlyTo,
-  useZoom,
+  useMapEventListener,
   useCreateGeoJsonSource,
 } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
 
-const mapInstance = ref(null);
+const mapInstance = shallowRef(null);
 
 // Use composables for enhanced functionality
 const { flyTo } = useFlyTo({ map: mapInstance });
-const { zoom: currentZoom } = useZoom({ map: mapInstance });
-const { updateData } = useCreateGeoJsonSource({
+
+// The camera composables expose actions, not a live zoom value. Track it from
+// the map's own `zoom` event when you want to display it.
+const currentZoom = ref(2);
+useMapEventListener({
   map: mapInstance,
-  sourceId: 'random-points',
-  data: ref({ type: 'FeatureCollection', features: [] }),
+  event: 'zoom',
+  on: () => {
+    currentZoom.value = mapInstance.value?.getZoom() ?? currentZoom.value;
+  },
+});
+
+// `data` is the source's initial payload; later changes go through setData.
+const points = ref({ type: 'FeatureCollection', features: [] });
+const { setData } = useCreateGeoJsonSource({
+  map: mapInstance,
+  id: 'random-points',
+  data: points.value,
 });
 
 function onMapLoad(map) {
@@ -213,11 +226,12 @@ function addRandomPoint() {
     },
   };
 
-  // Update the data source
-  updateData((currentData) => ({
-    ...currentData,
-    features: [...currentData.features, newFeature],
-  }));
+  // Update the data source. setData takes the new collection, not an updater.
+  points.value = {
+    ...points.value,
+    features: [...points.value.features, newFeature],
+  };
+  setData(points.value);
 }
 </script>
 
@@ -257,10 +271,10 @@ Handle map and layer events:
     @click="onMapClick"
     @zoom="onMapZoom"
   >
-    <GeoJsonSource :data="geoJsonData" source-id="clickable-data">
+    <GeoJsonSource :data="geoJsonData" id="clickable-data">
       <CircleLayer
         :style="circleStyle"
-        layer-id="clickable-circles"
+        id="clickable-circles"
         @click="onCircleClick"
       />
     </GeoJsonSource>
@@ -272,7 +286,7 @@ import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, CircleLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });

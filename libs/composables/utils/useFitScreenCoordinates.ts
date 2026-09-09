@@ -1,7 +1,7 @@
-import { watchEffect, ref, computed, unref, onUnmounted } from 'vue';
+import { watch, ref, computed, unref, onUnmounted } from 'vue';
 import { useLogger } from '@libs/composables';
 import type { Nullable, Undefinedable } from '@libs/types';
-import type { MaybeRef } from 'vue';
+import type { ComputedRef, MaybeRef } from 'vue';
 import type { Map, FitBoundsOptions, PointLike } from '@maptiler/sdk';
 
 /**
@@ -43,11 +43,11 @@ interface FitScreenCoordinatesActions {
   /** Clear current screen coordinates */
   clearCoordinates: () => void;
   /** Current status */
-  readonly status: Readonly<FitScreenCoordinatesStatus>;
+  readonly status: ComputedRef<FitScreenCoordinatesStatus>;
   /** Computed state flags */
-  readonly isCoordinatesSet: boolean;
-  readonly isFitting: boolean;
-  readonly hasError: boolean;
+  readonly isCoordinatesSet: ComputedRef<boolean>;
+  readonly isFitting: ComputedRef<boolean>;
+  readonly hasError: ComputedRef<boolean>;
 }
 
 /**
@@ -242,47 +242,55 @@ export function useFitScreenCoordinates(
     status.value = FitScreenCoordinatesStatus.NotSet;
   }
 
-  // Watch for map and coordinates changes with enhanced error handling
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      p0.value &&
-      p1.value &&
-      status.value !== FitScreenCoordinatesStatus.Setting
-    ) {
-      try {
-        if (!map.isStyleLoaded()) {
-          // Wait for style to load before fitting
-          const onStyleLoad = () => {
-            map.off('styledata', onStyleLoad);
-            fitScreenCoordinates(
-              p0.value!,
-              p1.value!,
-              options.value,
-              bearing.value,
-            );
-          };
-          map.on('styledata', onStyleLoad);
-          return;
-        }
-
-        // Use current bearing if none set
-        const finalBearing = bearing.value ?? getCurrentBearing() ?? 0;
-
-        map.fitScreenCoordinates(
-          p0.value,
-          p1.value,
-          finalBearing,
-          options.value,
-        );
-        status.value = FitScreenCoordinatesStatus.Set;
-      } catch (error) {
-        status.value = FitScreenCoordinatesStatus.Error;
-        logError('Error in watchEffect for screen coordinates:', error);
-      }
+  /**
+   * Re-applies the stored coordinates to a replacement map. Bypasses
+   * `validateOperation` on purpose: a camera move only needs the transform,
+   * and `isStyleLoaded()` stays false through the first `styledata` while
+   * sources are still pending, so gating on it here would reject the very
+   * event this waits for.
+   */
+  function reapplyToMap(map: Map): void {
+    try {
+      const finalBearing = bearing.value ?? getCurrentBearing() ?? 0;
+      map.fitScreenCoordinates(
+        p0.value!,
+        p1.value!,
+        finalBearing,
+        options.value,
+      );
+      status.value = FitScreenCoordinatesStatus.Set;
+    } catch (error) {
+      status.value = FitScreenCoordinatesStatus.Error;
+      logError('Error fitting screen coordinates on map change:', error);
     }
-  });
+  }
+
+  // Re-apply the coordinates when the map is replaced. `p0`/`p1` are only
+  // written after a successful fit against a live map, so nothing is ever
+  // pending for the first map — this is the replacement path only.
+  //
+  // A `watch` on the map instance, not a `watchEffect`: the body read `status`
+  // and `fitScreenCoordinates` writes it, so the effect re-triggered itself —
+  // and every re-run attached another `styledata` listener, because it
+  // registered one without any cleanup.
+  watch(
+    mapInstance,
+    (map, _previousMap, onCleanUp) => {
+      if (!map || !p0.value || !p1.value) return;
+      if (status.value === FitScreenCoordinatesStatus.Setting) return;
+
+      if (map.isStyleLoaded()) {
+        reapplyToMap(map);
+        return;
+      }
+
+      // No style yet — the first `styledata` means the map is usable.
+      const onStyleData = () => reapplyToMap(map);
+      map.once('styledata', onStyleData);
+      onCleanUp(() => map.off('styledata', onStyleData));
+    },
+    { immediate: true },
+  );
 
   // Cleanup function for disposing resources
   function cleanup(): void {
@@ -297,9 +305,9 @@ export function useFitScreenCoordinates(
   return {
     fitScreenCoordinates,
     clearCoordinates,
-    status: status.value as Readonly<FitScreenCoordinatesStatus>,
-    isCoordinatesSet: isCoordinatesSet.value,
-    isFitting: isFitting.value,
-    hasError: hasError.value,
+    status: computed(() => status.value),
+    isCoordinatesSet,
+    isFitting,
+    hasError,
   };
 }

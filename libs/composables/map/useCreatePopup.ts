@@ -1,17 +1,18 @@
+import { isBrowser } from '@libs/helpers';
 import {
   computed,
   shallowRef,
   unref,
-  watchEffect,
   ref,
   watch,
+  onScopeDispose,
   onUnmounted,
 } from 'vue';
 import { Popup } from '@maptiler/sdk';
 import { lngLatLikeHasValue } from '@libs/helpers';
 import { useLogger } from '@libs/composables';
 import type { Nullable } from '@libs/types';
-import type { Ref, MaybeRef } from 'vue';
+import type { ComputedRef, Ref, MaybeRef } from 'vue';
 import type { LngLatLike, Map, PopupOptions, PointLike } from '@maptiler/sdk';
 
 /**
@@ -24,7 +25,6 @@ export enum PopupStatus {
   Open = 'open',
   Closed = 'closed',
   Error = 'error',
-  Removed = 'removed',
 }
 
 interface PopupEventHandlers {
@@ -48,10 +48,10 @@ interface CreatePopupProps {
 }
 
 interface CreatePopupActions {
-  popup: Readonly<Nullable<Popup>>;
-  popupStatus: Readonly<PopupStatus>;
-  isPopupCreated: boolean;
-  isPopupOpen: boolean;
+  popup: ComputedRef<Nullable<Popup>>;
+  popupStatus: ComputedRef<PopupStatus>;
+  isPopupCreated: ComputedRef<boolean>;
+  isPopupOpen: ComputedRef<boolean>;
   setLngLat: (lnglat: LngLatLike) => void;
   setOffset: (offset: PointLike) => void;
   addClassName: (className: string) => void;
@@ -71,7 +71,7 @@ interface CreatePopupActions {
 }
 
 /**
- * Composable for managing MapTiler GL Popups
+ * Composable for managing MapTiler SDK Popups
  * Provides reactive popup with error handling, performance optimizations, and enhanced API
  *
  * @param props - Configuration options for the popup
@@ -138,7 +138,7 @@ export function useCreatePopup({
   function createPopup(): void {
     const map = mapInstance.value;
 
-    if (!map) return;
+    if (!isBrowser || !map) return;
 
     if (popup.value) return;
 
@@ -185,16 +185,29 @@ export function useCreatePopup({
     }
   }
 
-  // Watch for map changes and manage popup lifecycle
-  watchEffect((onCleanUp) => {
-    const map = mapInstance.value;
-    if (map && popupStatus.value === PopupStatus.NotCreated && autoCreate) {
-      createPopup();
-    } else if (!map && isPopupCreated.value) {
-      removePopup();
-    }
-    onCleanUp(removePopup);
+  // Watch the map instance, not a `watchEffect` over `popupStatus`: both
+  // branches below write that status, so an effect tracked its own writes and
+  // its cleanup tore the popup down on every re-run.
+  watch(
+    mapInstance,
+    (map) => {
+      // A replaced map means the popup has to move with it.
+      if (popup.value) removePopup();
+      if (map && autoCreate) createPopup();
+    },
+    { immediate: true },
+  );
+
+  // `createPopup` bails while both `el` and `html` are empty, and a template
+  // ref is still `undefined` during `setup()`. The map watcher above fires only
+  // on the map, so without this a popup whose map arrived first is never built.
+  watch([() => el?.value, htmlValue], () => {
+    if (!popup.value && mapInstance.value && autoCreate) createPopup();
   });
+
+  // Release the popup when the owning scope stops, which `watchEffect`'s
+  // cleanup used to cover.
+  onScopeDispose(removePopup);
 
   // Watch for HTML content changes
   watch(htmlValue, (newHtml) => {
@@ -437,11 +450,11 @@ export function useCreatePopup({
       if (popup.value.isOpen()) {
         popup.value.remove();
       }
-
-      popupStatus.value = PopupStatus.Removed;
     } catch (error) {
       logError('Error removing popup:', error);
     } finally {
+      // Back to NotCreated, not a distinct "removed" state — see the matching
+      // note in useCreateMarker's removeMarker.
       popup.value = null;
       popupStatus.value = PopupStatus.NotCreated;
     }
@@ -456,10 +469,10 @@ export function useCreatePopup({
   onUnmounted(cleanup);
 
   return {
-    popup: popup.value,
-    popupStatus: popupStatus.value,
-    isPopupCreated: isPopupCreated.value,
-    isPopupOpen: isPopupOpen.value,
+    popup: computed(() => popup.value),
+    popupStatus: computed(() => popupStatus.value),
+    isPopupCreated,
+    isPopupOpen,
     setLngLat,
     setOffset,
     addClassName,

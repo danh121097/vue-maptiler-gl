@@ -1,5 +1,7 @@
-// Import CSS styles
-import './style.css';
+// Styles are not imported here. MapTiler's own stylesheet is a peer concern:
+// consumers import '@maptiler/sdk/dist/maptiler-sdk.css' themselves, as MapTiler's
+// docs instruct. This package's own rules ship as
+// 'vue3-maptiler-gl/dist/style.css', the path the docs use throughout.
 
 // Export all composables
 export * from './composables';
@@ -16,166 +18,160 @@ export * from './types';
 // Export all components
 export * from './components';
 
-// Re-export comprehensive MapTiler GL types and interfaces for convenience
-// Note: Classes are not re-exported to reduce bundle size
-// Users should import them directly from '@maptiler/sdk' if needed
+// Re-export the commonly used public MapTiler SDK types directly.
 export type {
-  // ===== CORE TYPES =====
-  MapOptions,
-  LngLatLike,
-  LngLatBoundsLike,
-  PointLike,
-  PaddingOptions,
-  CameraOptions,
-  AnimationOptions,
-  RequestParameters,
-  GetResourceResponse,
   AddProtocolAction,
-  Config,
-
-  // ===== COORDINATE & GEOMETRY TYPES =====
-  IMercatorCoordinate,
-  Padding,
-
-  // ===== STYLE SPECIFICATION TYPES =====
-  StyleSpecification,
-  LayerSpecification,
-  SourceSpecification,
-  FilterSpecification,
-  ExpressionSpecification,
-  TransitionSpecification,
-  PropertyValueSpecification,
-  DataDrivenPropertyValueSpecification,
-  StylePropertySpecification,
-  StylePropertyExpression,
-  ProjectionSpecification,
-  SkySpecification,
-  SpriteSpecification,
-  StateSpecification,
-
-  // ===== BOUNDS AND CAMERA TYPES =====
+  Alignment,
+  AnimationOptions,
+  AttributionControlOptions,
   CameraForBoundsOptions,
+  CameraOptions,
+  CanvasSourceSpecification,
+  CircleLayerSpecification,
+  Config,
+  CompleteMapOptions,
+  ControlPosition,
+  EaseToOptions,
+  ErrorLike,
+  Feature,
+  FeatureFilter,
+  FeatureIdentifier,
+  FeatureState,
+  FillLayerSpecification,
+  FilterSpecification,
   FitBoundsOptions,
-
-  // ===== EVENT TYPES =====
-  MapEventType,
-  MapLayerEventType,
-  MapSourceDataEvent,
+  FlyToOptions,
+  FullscreenControlOptions,
+  GeoJSONFeature,
+  GeoJSONFeatureId,
+  GeoJSONSourceSpecification,
+  GeolocateControlOptions,
+  GetResourceResponse,
+  ICanonicalTileID,
+  IControl,
+  IMercatorCoordinate,
+  ImageSourceSpecification,
+  InterpolationType,
+  JumpToOptions,
+  LayerSpecification,
+  LineLayerSpecification,
+  LngLatBoundsLike,
+  LngLatLike,
   MapContextEvent,
   MapDataEvent,
-  MapLibreZoomEvent as MapTilerZoomEvent,
-
-  // ===== FEATURE TYPES =====
+  MapEventType,
   MapGeoJSONFeature,
+  MapLayerEventType,
+  MapLayerMouseEvent,
+  MapLayerTouchEvent,
+  MapLibreEvent as MapTilerGLEvent,
+  MapLibreZoomEvent as MapTilerZoomEvent,
+  MapOptions,
+  MapProjectionEvent,
+  MapSourceDataEvent,
+  MapSourceDataType,
+  MapStyleDataEvent,
+  MapStyleImageMissingEvent,
+  MapTerrainEvent,
+  MarkerOptions,
+  NavigationControlOptions,
+  Padding,
+  PaddingOptions,
+  PointLike,
+  PopupOptions,
+  ProjectionSpecification,
+  PropertyValueSpecification,
   QueryRenderedFeaturesOptions,
   QuerySourceFeatureOptions,
-  FeatureIdentifier,
-  Feature,
-  FeatureState,
-  FeatureFilter,
-
-  // ===== SOURCE TYPES =====
-  GeoJSONSourceSpecification,
-  VectorSourceSpecification,
-  RasterSourceSpecification,
   RasterDEMSourceSpecification,
-  ImageSourceSpecification,
-  VideoSourceSpecification,
-  CanvasSourceSpecification,
-  SourceExpression,
-
-  // ===== LAYER SPECIFICATION TYPES =====
-  FillLayerSpecification,
-  LineLayerSpecification,
-  SymbolLayerSpecification,
-  CircleLayerSpecification,
-  HeatmapLayerSpecification,
-  FillExtrusionLayerSpecification,
-  RasterLayerSpecification,
-  HillshadeLayerSpecification,
-  BackgroundLayerSpecification,
-
-  // ===== CONTROL TYPES =====
-  ControlPosition,
-  IControl,
-
-  // ===== TERRAIN & LIGHTING TYPES =====
-  TerrainSpecification,
-  LightSpecification,
-
-  // ===== EXPRESSION & FORMATTING TYPES =====
-  CompositeExpression,
-  InterpolationType,
-  GlobalProperties,
-  PromoteIdSpecification,
-  VariableAnchorOffsetCollection,
-
-  // ===== COLOR & STYLING TYPES =====
-  ColorArray,
-  NumberArray,
+  RasterSourceSpecification,
+  RequestParameters,
   ResolvedImage,
-
-  // ===== DIFF & OPERATIONS TYPES =====
-  DiffCommand,
-  DiffOperations,
-
-  // ===== TILE & CANONICAL TYPES =====
-  ICanonicalTileID,
-
-  // ===== STYLE IMAGE TYPES =====
-  StyleImageInterface,
-  StyleImageData,
-  StyleImageMetadata,
-  StyleImage,
+  ScaleControlOptions,
+  SkySpecification,
+  SourceExpression,
+  SourceSpecification,
   SpriteOnDemandStyleImage,
-
-  // ===== ERROR TYPES =====
-  ErrorLike,
+  SpriteSpecification,
+  StateSpecification,
+  StyleImage,
+  StyleImageData,
+  StyleImageInterface,
+  StyleImageMetadata,
+  StyleOptions,
+  StylePropertyExpression,
+  StylePropertySpecification,
+  StyleSetterOptions,
+  StyleSpecification,
+  SymbolLayerSpecification,
+  StyleSwapOptions,
+  TerrainSpecification,
+  TransitionSpecification,
+  UpdateImageOptions,
+  VariableAnchorOffsetCollection,
+  VectorSourceSpecification,
+  VideoSourceSpecification,
 } from '@maptiler/sdk';
 
-// Re-export essential MapTiler GL classes for convenience
-// These are the main classes users typically need
-export {
-  // ===== CORE CLASSES =====
-  Map,
+// MapTiler SDK classes are values *and* types. Their runtime side moved to the
+// 'vue3-maptiler-gl/maptiler' subpath (see below), but the type side stays here:
+// a type export is erased at compile time, so it costs a consumer nothing and
+// `import type { Map } from 'vue3-maptiler-gl'` keeps working.
+export type {
+  AJAXError,
+  AttributionControl,
+  BoxZoomHandler,
+  CanvasSource,
+  Color,
+  CooperativeGesturesHandler,
+  DoubleClickZoomHandler,
+  DragPanHandler,
+  DragRotateHandler,
+  EdgeInsets,
+  ErrorEvent,
+  Event,
+  Evented,
+  Formatted,
+  FormattedSection,
+  FullscreenControl,
+  GeoJSONSource,
+  GeolocateControl,
+  GlobeControl,
+  Hash,
+  ImageSource,
+  KeyboardHandler,
   LngLat,
   LngLatBounds,
-  Point,
-  MercatorCoordinate,
-
-  // ===== CONTROL CLASSES =====
-  NavigationControl,
-  GeolocateControl,
-  ScaleControl,
-  FullscreenControl,
-  AttributionControl,
-
-  // ===== SOURCE CLASSES =====
-  GeoJSONSource,
-  VectorTileSource,
-  RasterTileSource,
-  RasterDEMTileSource,
-  ImageSource,
-  VideoSource,
-  CanvasSource,
-
-  // ===== UTIL CLASSES =====
-  EdgeInsets,
-
-  // ===== ERROR CLASSES =====
-  AJAXError,
-} from '@maptiler/sdk';
-
-export type {
-  // ===== EVENT CLASSES =====
+  LogoControl,
+  Map,
   MapMouseEvent,
   MapTouchEvent,
   MapWheelEvent,
-  ErrorEvent,
-  Event,
-
-  // ===== STYLE & FORMATTING CLASSES =====
-  Color,
-  Formatted,
-  FormattedSection,
+  MercatorCoordinate,
+  NavigationControl,
+  Point,
+  RasterDEMTileSource,
+  RasterTileSource,
+  ScaleControl,
+  ScrollZoomHandler,
+  Style,
+  TerrainControl,
+  TwoFingersTouchPitchHandler,
+  TwoFingersTouchRotateHandler,
+  TwoFingersTouchZoomHandler,
+  TwoFingersTouchZoomRotateHandler,
+  VectorTileSource,
+  VideoSource,
 } from '@maptiler/sdk';
+
+// `Marker` and `Popup` are Vue components at this package's root, so the
+// upstream classes keep the aliases they have always had.
+export type {
+  Marker as MapTilerMarker,
+  Popup as MapTilerPopup,
+} from '@maptiler/sdk';
+
+// Only the *runtime* MapTiler surface (the `maptilersdk` namespace, the classes
+// as constructors, `addProtocol`, …) lives on the dedicated
+// 'vue3-maptiler-gl/maptiler' subpath, so importing a single component from the
+// root does not pin the whole upstream runtime into the module graph.

@@ -25,10 +25,18 @@ interface GeoJsonSourceProps {
   debug?: boolean;
   /** Automatically cleanup resources on unmount */
   autoCleanup?: boolean;
-  /** Error handling callback */
-  onError?: (error: any) => void;
-  /** Source load success callback */
-  onLoad?: (source: GeoJSONSource) => void;
+  /**
+   * Error handling callback.
+   *
+   * Not `onError`: this component also emits `error`, and Vue puts an emit's
+   * handler on `$props` under that same `onError` key. One key for both meant
+   * `@error="fn"` called `fn` twice -- once through the emit, once through
+   * `props.onError` -- and made the two declarations intersect into a type no
+   * handler satisfies.
+   */
+  onSourceError?: (error: any) => void;
+  /** Source load success callback. Named for the same reason as `onSourceError`. */
+  onSourceLoad?: (source: GeoJSONSource) => void;
   /** Data update callback */
   onDataUpdate?: (data: GeoJSONSourceSpecification['data']) => void;
   /** Debounce delay for data updates in milliseconds (default: 100) */
@@ -65,6 +73,11 @@ const { logError } = useLogger(props.debug);
 const mapInstance = inject(MapProvideKey, shallowRef(null));
 const isSourceRegistered = ref(false);
 const lastDataUpdate = shallowRef<GeoJSONSourceSpecification['data']>();
+
+// Read-only views for the `register` payload — external consumers must not be
+// able to write the component's own state.
+const isSourceRegisteredRef = computed(() => isSourceRegistered.value);
+const lastDataUpdateRef = computed(() => lastDataUpdate.value);
 
 // Computed properties for better reactivity and performance
 const isDataValid = computed(() => {
@@ -114,7 +127,7 @@ function handleSetData(newData: GeoJSONSourceSpecification['data']): void {
   } catch (error) {
     logError('Error setting GeoJSON source data:', error);
     emits('error', error);
-    props.onError?.(error);
+    props.onSourceError?.(error);
   }
 }
 
@@ -138,9 +151,9 @@ const {
       const enhancedActions = {
         ...actions,
         // Additional enhanced methods
-        isSourceRegistered: isSourceRegistered.value,
-        lastDataUpdate: lastDataUpdate.value,
-        isDataValid: isDataValid.value,
+        isSourceRegistered: isSourceRegisteredRef,
+        lastDataUpdate: lastDataUpdateRef,
+        isDataValid,
       };
 
       props.register?.(enhancedActions);
@@ -151,12 +164,12 @@ const {
       // Emit load event
       if (actions.getSource.value) {
         emits('load', actions.getSource.value);
-        props.onLoad?.(actions.getSource.value);
+        props.onSourceLoad?.(actions.getSource.value);
       }
     } catch (error) {
       logError('Error registering GeoJSON source:', error);
       emits('error', error);
-      props.onError?.(error);
+      props.onSourceError?.(error);
     }
   },
 });
@@ -177,17 +190,16 @@ const stopDataWatcher = useDebouncedWatch(
         const error = new Error('Invalid GeoJSON data format');
         logError('Invalid GeoJSON data provided:', newData);
         emits('error', error);
-        props.onError?.(error);
+        props.onSourceError?.(error);
       }
     } catch (error) {
       logError('Error in data watcher:', error);
       emits('error', error);
-      props.onError?.(error);
+      props.onSourceError?.(error);
     }
   },
   {
     delay: props.debounceDelay,
-    deep: true,
     immediate: true,
     flush: 'post', // Optimize by running after DOM updates
     debug: props.debug,
@@ -208,7 +220,7 @@ function cleanup(): void {
       lastDataUpdate.value = undefined;
 
       // Remove source if still available
-      if (isSourceReady) {
+      if (isSourceReady.value) {
         removeSource();
       }
     }

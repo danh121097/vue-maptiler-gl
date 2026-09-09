@@ -1,0 +1,64 @@
+{
+  "name": "nuxt-maptiler-gl",
+  "version": "2.0.0",
+  "description": "Nuxt module for vue3-maptiler-gl — auto-import components, composables, CSS, and SSR configuration",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Danh Nguyen",
+    "url": "https://harrynguyen.work"
+  },
+  "homepage": "https://github.com/danh121097/vue-maptiler-gl#readme",
+  "bugs": {
+    "url": "https://github.com/danh121097/vue-maptiler-gl/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danh121097/vue-maptiler-gl",
+    "directory": "nuxt"
+  },
+  "keywords": [
+    "nuxt",
+    "nuxt-module",
+    "nuxt3",
+    "maptiler",
+    "@maptiler/sdk",
+    "vue",
+    "vue3",
+    "map",
+    "webgl",
+    "gis"
+  ],
+  "nuxt": "./dist/module.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/types.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "main": "./dist/module.mjs",
+  "types": "./dist/types.d.mts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev:prepare": "nuxt-module-build build --stub && nuxi prepare playground",
+    "dev": "nuxi dev playground",
+    "build": "nuxt-module-build build",
+    "prepack": "nuxt-module-build build"
+  },
+  "dependencies": {
+    "@nuxt/kit": "^3.15.0",
+    "@maptiler/sdk": "^4.1.0",
+    "vue3-maptiler-gl": "^2.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/module-builder": "^1.0.2",
+    "nuxt": "^3.15.0",
+    "typescript": "^5.4.0"
+  },
+  "peerDependencies": {
+    "nuxt": ">=3.0.0"
+  }
+}

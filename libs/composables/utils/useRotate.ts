@@ -1,12 +1,10 @@
-import { watchEffect, ref, computed, unref, onUnmounted } from 'vue';
+import { watch, ref, computed, unref, onUnmounted } from 'vue';
 import { useLogger } from '@libs/composables';
+import { createCameraAnimation } from './createCameraAnimation';
 import type { Nullable, Undefinedable } from '@libs/types';
-import type { MaybeRef } from 'vue';
+import type { ComputedRef, MaybeRef } from 'vue';
 import type { Map, AnimationOptions, CameraOptions } from '@maptiler/sdk';
 
-/**
- * Rotation animation status enum for better state management
- */
 export enum RotationStatus {
   NotStarted = 'not-started',
   Rotating = 'rotating',
@@ -21,91 +19,189 @@ interface RotateToProps {
   debug?: boolean;
   autoRotate?: boolean;
 }
-
 interface RotateToActions {
   rotateTo: (bearing: number, options?: AnimationOptions) => Promise<void>;
   stopRotating: () => void;
   getCurrentBearing: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
   validateBearing: (bearing: number) => boolean;
-  rotationStatus: Readonly<RotationStatus>;
-  isRotating: boolean;
+  rotationStatus: ComputedRef<RotationStatus>;
+  isRotating: ComputedRef<boolean>;
 }
-
 interface ResetNorthProps {
   map: MaybeRef<Nullable<Map>>;
   options?: AnimationOptions;
   debug?: boolean;
   autoReset?: boolean;
 }
-
 interface ResetNorthActions {
   resetNorth: (options?: AnimationOptions) => Promise<void>;
   stopRotating: () => void;
   getCurrentBearing: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
-  rotationStatus: Readonly<RotationStatus>;
-  isRotating: boolean;
+  rotationStatus: ComputedRef<RotationStatus>;
+  isRotating: ComputedRef<boolean>;
 }
-
 interface ResetNorthPitchProps {
   map: MaybeRef<Nullable<Map>>;
   options?: AnimationOptions;
   debug?: boolean;
   autoReset?: boolean;
 }
-
 interface ResetNorthPitchActions {
   resetNorthPitch: (options?: AnimationOptions) => Promise<void>;
   stopRotating: () => void;
   getCurrentBearing: () => number | null;
   getCurrentPitch: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
-  rotationStatus: Readonly<RotationStatus>;
-  isRotating: boolean;
+  rotationStatus: ComputedRef<RotationStatus>;
+  isRotating: ComputedRef<boolean>;
 }
-
 interface SnapToNorthProps {
   map: MaybeRef<Nullable<Map>>;
   options?: AnimationOptions;
   debug?: boolean;
   autoSnap?: boolean;
 }
-
 interface SnapToNorthActions {
   snapToNorth: (options?: AnimationOptions) => Promise<void>;
   stopRotating: () => void;
   getCurrentBearing: () => number | null;
   getCurrentCamera: () => CameraOptions | null;
-  rotationStatus: Readonly<RotationStatus>;
-  isRotating: boolean;
+  rotationStatus: ComputedRef<RotationStatus>;
+  isRotating: ComputedRef<boolean>;
+}
+
+// --- Shared helpers ---
+
+function validateBearing(bearing: number): boolean {
+  return typeof bearing === 'number' && !isNaN(bearing);
+}
+
+function makeGetBearing(
+  mapInstance: { value: Map | null },
+  logError: (...a: any[]) => void,
+) {
+  return (): number | null => {
+    try {
+      return mapInstance.value?.getBearing() ?? null;
+    } catch {
+      logError('Error getting current bearing');
+      return null;
+    }
+  };
+}
+
+function makeGetPitch(
+  mapInstance: { value: Map | null },
+  logError: (...a: any[]) => void,
+) {
+  return (): number | null => {
+    try {
+      return mapInstance.value?.getPitch() ?? null;
+    } catch {
+      logError('Error getting current pitch');
+      return null;
+    }
+  };
 }
 
 /**
- * Composable for managing map rotation-to operations with enhanced error handling
- * Provides reactive rotation-to functionality with validation and debugging capabilities
- *
- * @param props - Configuration options for rotation-to functionality
- * @returns Enhanced actions and state for rotation-to operations
+ * Helper to create a simple rotation composable that calls a single map method.
+ * Used by useResetNorth, useResetNorthPitch, useSnapToNorth.
  */
-export function useRotateTo(props: RotateToProps): RotateToActions;
+function createSimpleRotation(
+  props: {
+    map: MaybeRef<Nullable<Map>>;
+    options?: AnimationOptions;
+    debug?: boolean;
+  },
+  method: string,
+  autoFlag: boolean,
+) {
+  const { logError } = useLogger(props.debug ?? false);
+  const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
+  const rotationStatus = ref<RotationStatus>(RotationStatus.NotStarted);
+  const mapInstance = computed(() => unref(props.map));
+  const isRotating = computed(
+    () => rotationStatus.value === RotationStatus.Rotating,
+  );
 
-/**
- * Legacy overload for backward compatibility
- * @deprecated Use the new props-based interface for better type safety and features
- */
+  const { executeAnimation, getCurrentCamera, stopAnimation } =
+    createCameraAnimation({ map: props.map, debug: props.debug });
+  const getCurrentBearing = makeGetBearing(mapInstance, logError);
+
+  function execute(options?: AnimationOptions): Promise<void> {
+    if (options) animationOptions.value = options;
+    const finalOptions = options || animationOptions.value;
+    rotationStatus.value = RotationStatus.Rotating;
+
+    // Without options MapTiler still eases over its default duration, so the
+    // call is awaited either way. `finalOptions` may be undefined: it must
+    // still occupy the options slot so the completion token lands in `eventData`.
+    return executeAnimation(method, [finalOptions], 'moveend')
+      .then(() => {
+        rotationStatus.value = RotationStatus.Completed;
+      })
+      .catch((error) => {
+        rotationStatus.value = RotationStatus.Error;
+        throw error;
+      });
+  }
+
+  function stopRotating(): void {
+    stopAnimation();
+    rotationStatus.value = RotationStatus.Completed;
+  }
+
+  // Auto-run once a map arrives. Watching the map instance rather than running
+  // an effect keeps `rotationStatus` — which `execute` writes — out of the
+  // dependency set.
+  watch(
+    mapInstance,
+    (map) => {
+      if (
+        map &&
+        autoFlag &&
+        rotationStatus.value === RotationStatus.NotStarted
+      ) {
+        execute(animationOptions.value).catch((e) =>
+          logError(`Error in auto ${method}:`, e),
+        );
+      }
+    },
+    { immediate: true },
+  );
+
+  onUnmounted(() => {
+    rotationStatus.value = RotationStatus.Completed;
+  });
+
+  return {
+    execute,
+    stopRotating,
+    getCurrentBearing,
+    getCurrentCamera,
+    rotationStatus,
+    isRotating,
+    logError,
+    mapInstance,
+  };
+}
+
+// --- useRotateTo ---
+
+export function useRotateTo(props: RotateToProps): RotateToActions;
 export function useRotateTo(
   map: MaybeRef<Nullable<Map>>,
   options?: AnimationOptions & { bearing: number },
 ): { rotateTo: (bearingVal: number, options?: AnimationOptions) => void };
-
 export function useRotateTo(
   mapOrProps: MaybeRef<Nullable<Map>> | RotateToProps,
   legacyOptions?: AnimationOptions & { bearing: number },
 ):
   | RotateToActions
   | { rotateTo: (bearingVal: number, options?: AnimationOptions) => void } {
-  // Handle legacy API for backward compatibility
   const isLegacyAPI =
     legacyOptions !== undefined || !('map' in (mapOrProps as any));
   const props: RotateToProps = isLegacyAPI
@@ -118,203 +214,81 @@ export function useRotateTo(
       }
     : (mapOrProps as RotateToProps);
 
-  const { logError, logWarn } = useLogger(props.debug ?? false);
+  const { logError } = useLogger(props.debug ?? false);
   const bearing = ref<number | undefined>(props.bearing);
   const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
   const rotationStatus = ref<RotationStatus>(RotationStatus.NotStarted);
-
-  // Computed properties for better reactivity and performance
   const mapInstance = computed(() => unref(props.map));
   const isRotating = computed(
     () => rotationStatus.value === RotationStatus.Rotating,
   );
 
-  /**
-   * Validates if rotation operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateRotationOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) return false;
-    return true;
-  }
+  const { executeAnimation, getCurrentCamera, stopAnimation } =
+    createCameraAnimation({ map: props.map, debug: props.debug });
+  const getCurrentBearing = makeGetBearing(mapInstance, logError);
 
-  /**
-   * Validates bearing value for correctness
-   * @param bearing - Bearing value to validate
-   * @returns boolean indicating if bearing is valid
-   */
-  function validateBearing(bearing: number): boolean {
-    if (typeof bearing !== 'number' || isNaN(bearing)) {
-      return false;
-    }
-
-    // Normalize bearing to 0-360 range for validation
-    const normalizedBearing = ((bearing % 360) + 360) % 360;
-    if (normalizedBearing !== bearing && bearing < 0) {
-      logWarn('Warning: Negative bearing will be normalized', {
-        original: bearing,
-        normalized: normalizedBearing,
-      });
-    }
-
-    return true;
-  }
-
-  /**
-   * Gets the current bearing
-   * @returns Current bearing or null
-   */
-  function getCurrentBearing(): number | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-
-    try {
-      return map.getBearing();
-    } catch (error) {
-      logError('Error getting current bearing:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the current camera position
-   * @returns Current camera options or null
-   */
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch (error) {
-      logError('Error getting current camera:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Performs rotate-to operation with enhanced error handling and validation
-   * @param bearingVal - Target bearing value
-   * @param options - Animation options
-   * @returns Promise that resolves when animation completes
-   */
   function rotateTo(
     bearingVal: number,
     options?: AnimationOptions,
   ): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!validateRotationOperation()) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
-
-      if (!validateBearing(bearingVal)) {
-        rotationStatus.value = RotationStatus.Error;
-        reject(new Error('Invalid bearing value'));
-        return;
-      }
-
-      const map = mapInstance.value!;
-      const finalOptions = options || animationOptions.value;
-      rotationStatus.value = RotationStatus.Rotating;
-
-      try {
-        // Store values for future use
-        bearing.value = bearingVal;
-        if (options) animationOptions.value = options;
-
-        if (finalOptions) {
-          // Add event listeners for animation completion
-          const onRotateEnd = () => {
-            map.off('rotateend', onRotateEnd);
-            map.off('error', onError);
-            rotationStatus.value = RotationStatus.Completed;
-            resolve();
-          };
-
-          const onError = (error: any) => {
-            map.off('rotateend', onRotateEnd);
-            map.off('error', onError);
-            rotationStatus.value = RotationStatus.Error;
-            reject(error);
-          };
-
-          map.once('rotateend', onRotateEnd);
-          map.once('error', onError);
-
-          // Start the animation
-          map.rotateTo(bearingVal, finalOptions);
-        } else {
-          // Immediate rotation without animation
-          map.rotateTo(bearingVal);
-          rotationStatus.value = RotationStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
-        rotationStatus.value = RotationStatus.Error;
-        logError('Error performing rotate-to operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Stops any ongoing rotation animation
-   */
-  function stopRotating(): void {
-    const map = mapInstance.value;
-    if (!map) return;
-
-    try {
-      map.stop();
-      rotationStatus.value = RotationStatus.Completed;
-    } catch (error) {
-      logError('Error stopping rotation animation:', error);
+    if (!validateBearing(bearingVal)) {
+      rotationStatus.value = RotationStatus.Error;
+      return Promise.reject(new Error('Invalid bearing value'));
     }
-  }
+    bearing.value = bearingVal;
+    if (options) animationOptions.value = options;
+    const finalOptions = options || animationOptions.value;
+    rotationStatus.value = RotationStatus.Rotating;
 
-  // Legacy function for backward compatibility
-  function legacyRotateTo(
-    bearingVal: number,
-    options?: AnimationOptions,
-  ): void {
-    rotateTo(bearingVal, options).catch((error) => {
-      logError('Error in legacy rotateTo:', error);
-    });
-  }
-
-  // Watch for map and options changes
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      bearing.value !== undefined &&
-      props.autoRotate !== false &&
-      rotationStatus.value === RotationStatus.NotStarted
-    ) {
-      rotateTo(bearing.value, animationOptions.value).catch((error) => {
-        logError('Error in watchEffect rotateTo:', error);
+    // Settle on `moveend`, which every ease fires; `rotateend` only fires when
+    // the bearing actually changed, so rotating to the current bearing would
+    // never resolve. Without options MapTiler still eases over its default
+    // duration, so that path is awaited too — see `createSimpleRotation`.
+    return executeAnimation('rotateTo', [bearingVal, finalOptions], 'moveend')
+      .then(() => {
+        rotationStatus.value = RotationStatus.Completed;
+      })
+      .catch((error) => {
+        rotationStatus.value = RotationStatus.Error;
+        throw error;
       });
-    }
-  });
+  }
 
-  // Cleanup function
-  function cleanup(): void {
+  function stopRotating(): void {
+    stopAnimation();
     rotationStatus.value = RotationStatus.Completed;
   }
 
-  // Cleanup on component unmount
-  onUnmounted(cleanup);
+  // Auto-rotate once a map arrives — see the note in `createSimpleRotation`.
+  watch(
+    mapInstance,
+    (map) => {
+      if (
+        map &&
+        bearing.value !== undefined &&
+        props.autoRotate !== false &&
+        rotationStatus.value === RotationStatus.NotStarted
+      ) {
+        rotateTo(bearing.value, animationOptions.value).catch((e) =>
+          logError('Error in auto rotateTo:', e),
+        );
+      }
+    },
+    { immediate: true },
+  );
 
-  // Return appropriate interface based on API version
+  onUnmounted(() => {
+    rotationStatus.value = RotationStatus.Completed;
+  });
+
   if (isLegacyAPI) {
-    return { rotateTo: legacyRotateTo };
+    return {
+      rotateTo: (bearingVal: number, options?: AnimationOptions) => {
+        rotateTo(bearingVal, options).catch((e) =>
+          logError('Error in legacy rotateTo:', e),
+        );
+      },
+    };
   }
 
   return {
@@ -323,34 +297,22 @@ export function useRotateTo(
     getCurrentBearing,
     getCurrentCamera,
     validateBearing,
-    rotationStatus: rotationStatus.value as Readonly<RotationStatus>,
-    isRotating: isRotating.value,
+    rotationStatus: computed(() => rotationStatus.value),
+    isRotating,
   };
 }
 
-/**
- * Composable for managing map reset-north operations with enhanced error handling
- * Provides reactive reset-north functionality with validation and debugging capabilities
- *
- * @param props - Configuration options for reset-north functionality
- * @returns Enhanced actions and state for reset-north operations
- */
-export function useResetNorth(props: ResetNorthProps): ResetNorthActions;
+// --- useResetNorth ---
 
-/**
- * Legacy overload for backward compatibility
- * @deprecated Use the new props-based interface for better type safety and features
- */
+export function useResetNorth(props: ResetNorthProps): ResetNorthActions;
 export function useResetNorth(
   map: MaybeRef<Nullable<Map>>,
   options?: AnimationOptions,
 ): { resetNorth: (options?: AnimationOptions) => void };
-
 export function useResetNorth(
   mapOrProps: MaybeRef<Nullable<Map>> | ResetNorthProps,
   legacyOptions?: AnimationOptions,
 ): ResetNorthActions | { resetNorth: (options?: AnimationOptions) => void } {
-  // Handle legacy API for backward compatibility
   const isLegacyAPI =
     legacyOptions !== undefined || !('map' in (mapOrProps as any));
   const props: ResetNorthProps = isLegacyAPI
@@ -362,180 +324,38 @@ export function useResetNorth(
       }
     : (mapOrProps as ResetNorthProps);
 
-  const { logError } = useLogger(props.debug ?? false);
-  const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
-  const rotationStatus = ref<RotationStatus>(RotationStatus.NotStarted);
-
-  // Computed properties for better reactivity and performance
-  const mapInstance = computed(() => unref(props.map));
-  const isRotating = computed(
-    () => rotationStatus.value === RotationStatus.Rotating,
-  );
-
-  /**
-   * Validates if rotation operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateRotationOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) return false;
-    return true;
-  }
-
-  /**
-   * Gets the current bearing
-   * @returns Current bearing or null
-   */
-  function getCurrentBearing(): number | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-
-    try {
-      return map.getBearing();
-    } catch (error) {
-      logError('Error getting current bearing:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Gets the current camera position
-   * @returns Current camera options or null
-   */
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch (error) {
-      logError('Error getting current camera:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Performs reset-north operation with enhanced error handling and validation
-   * @param options - Animation options
-   * @returns Promise that resolves when animation completes
-   */
-  function resetNorth(options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!validateRotationOperation()) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
-
-      const map = mapInstance.value!;
-      const finalOptions = options || animationOptions.value;
-      rotationStatus.value = RotationStatus.Rotating;
-
-      try {
-        // Store options for future use
-        if (options) animationOptions.value = options;
-
-        if (finalOptions) {
-          // Add event listeners for animation completion
-          const onRotateEnd = () => {
-            map.off('rotateend', onRotateEnd);
-            map.off('error', onError);
-            rotationStatus.value = RotationStatus.Completed;
-            resolve();
-          };
-
-          const onError = (error: any) => {
-            map.off('rotateend', onRotateEnd);
-            map.off('error', onError);
-            rotationStatus.value = RotationStatus.Error;
-            reject(error);
-          };
-
-          map.once('rotateend', onRotateEnd);
-          map.once('error', onError);
-
-          // Start the animation
-          map.resetNorth(finalOptions);
-        } else {
-          // Immediate reset without animation
-          map.resetNorth();
-          rotationStatus.value = RotationStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
-        rotationStatus.value = RotationStatus.Error;
-        logError('Error performing reset-north operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Stops any ongoing rotation animation
-   */
-  function stopRotating(): void {
-    const map = mapInstance.value;
-    if (!map) return;
-
-    try {
-      map.stop();
-      rotationStatus.value = RotationStatus.Completed;
-    } catch (error) {
-      logError('Error stopping rotation animation:', error);
-    }
-  }
-
-  // Legacy function for backward compatibility
-  function legacyResetNorth(options?: AnimationOptions): void {
-    resetNorth(options).catch((error) => {
-      logError('Error in legacy resetNorth:', error);
-    });
-  }
-
-  // Watch for map and options changes
-  watchEffect(() => {
-    const map = mapInstance.value;
-    if (
-      map &&
-      props.autoReset !== false &&
-      rotationStatus.value === RotationStatus.NotStarted
-    ) {
-      resetNorth(animationOptions.value).catch((error) => {
-        logError('Error in watchEffect resetNorth:', error);
-      });
-    }
-  });
-
-  // Cleanup function
-  function cleanup(): void {
-    rotationStatus.value = RotationStatus.Completed;
-  }
-
-  // Cleanup on component unmount
-  onUnmounted(cleanup);
-
-  // Return appropriate interface based on API version
-  if (isLegacyAPI) {
-    return { resetNorth: legacyResetNorth };
-  }
-
-  return {
-    resetNorth,
+  const {
+    execute,
     stopRotating,
     getCurrentBearing,
     getCurrentCamera,
-    rotationStatus: rotationStatus.value as Readonly<RotationStatus>,
-    isRotating: isRotating.value,
+    rotationStatus,
+    isRotating,
+    logError,
+  } = createSimpleRotation(props, 'resetNorth', props.autoReset !== false);
+
+  if (isLegacyAPI) {
+    return {
+      resetNorth: (options?: AnimationOptions) => {
+        execute(options).catch((e) =>
+          logError('Error in legacy resetNorth:', e),
+        );
+      },
+    };
+  }
+
+  return {
+    resetNorth: execute,
+    stopRotating,
+    getCurrentBearing,
+    getCurrentCamera,
+    rotationStatus: computed(() => rotationStatus.value),
+    isRotating,
   };
 }
 
-/**
- * Enhanced useResetNorthPitch with error handling and debugging
- */
+// --- useResetNorthPitch ---
+
 export function useResetNorthPitch(
   props: ResetNorthPitchProps,
 ): ResetNorthPitchActions;
@@ -560,117 +380,42 @@ export function useResetNorthPitch(
       }
     : (mapOrProps as ResetNorthPitchProps);
 
-  const { logError } = useLogger(props.debug ?? false);
-  const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
-  const rotationStatus = ref<RotationStatus>(RotationStatus.NotStarted);
-  const mapInstance = computed(() => unref(props.map));
-  const isRotating = computed(
-    () => rotationStatus.value === RotationStatus.Rotating,
-  );
+  const {
+    execute,
+    stopRotating,
+    getCurrentBearing,
+    getCurrentCamera,
+    rotationStatus,
+    isRotating,
+    logError,
+    mapInstance,
+  } = createSimpleRotation(props, 'resetNorthPitch', props.autoReset !== false);
 
-  function getCurrentBearing(): number | null {
-    try {
-      return mapInstance.value?.getBearing() ?? null;
-    } catch {
-      logError('Error getting current bearing');
-      return null;
-    }
-  }
-
-  function getCurrentPitch(): number | null {
-    try {
-      return mapInstance.value?.getPitch() ?? null;
-    } catch {
-      logError('Error getting current pitch');
-      return null;
-    }
-  }
-
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch {
-      logError('Error getting current camera');
-      return null;
-    }
-  }
-
-  function resetNorthPitch(options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const map = mapInstance.value;
-      if (!map) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
-
-      try {
-        rotationStatus.value = RotationStatus.Rotating;
-        const finalOptions = options || animationOptions.value;
-
-        if (finalOptions) {
-          const onComplete = () => {
-            rotationStatus.value = RotationStatus.Completed;
-            resolve();
-          };
-          map.once('moveend', onComplete);
-          map.resetNorthPitch(finalOptions);
-        } else {
-          map.resetNorthPitch();
-          rotationStatus.value = RotationStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
-        rotationStatus.value = RotationStatus.Error;
-        logError('Error performing reset-north-pitch operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  function stopRotating(): void {
-    try {
-      mapInstance.value?.stop();
-      rotationStatus.value = RotationStatus.Completed;
-    } catch {
-      logError('Error stopping rotation animation');
-    }
-  }
-
-  onUnmounted(() => {
-    rotationStatus.value = RotationStatus.Completed;
-  });
+  const getCurrentPitch = makeGetPitch(mapInstance, logError);
 
   if (isLegacyAPI) {
     return {
       resetNorthPitch: (options?: AnimationOptions) => {
-        resetNorthPitch(options).catch(() => {
-          logError('Error in legacy resetNorthPitch');
-        });
+        execute(options).catch((e) =>
+          logError('Error in legacy resetNorthPitch:', e),
+        );
       },
     };
   }
 
   return {
-    resetNorthPitch,
+    resetNorthPitch: execute,
     stopRotating,
     getCurrentBearing,
     getCurrentPitch,
     getCurrentCamera,
-    rotationStatus: rotationStatus.value as Readonly<RotationStatus>,
-    isRotating: isRotating.value,
+    rotationStatus: computed(() => rotationStatus.value),
+    isRotating,
   };
 }
 
-/**
- * Enhanced useSnapToNorth with error handling and debugging
- */
+// --- useSnapToNorth ---
+
 export function useSnapToNorth(props: SnapToNorthProps): SnapToNorthActions;
 export function useSnapToNorth(
   map: MaybeRef<Nullable<Map>>,
@@ -691,100 +436,32 @@ export function useSnapToNorth(
       }
     : (mapOrProps as SnapToNorthProps);
 
-  const { logError } = useLogger(props.debug ?? false);
-  const animationOptions = ref<Undefinedable<AnimationOptions>>(props.options);
-  const rotationStatus = ref<RotationStatus>(RotationStatus.NotStarted);
-  const mapInstance = computed(() => unref(props.map));
-  const isRotating = computed(
-    () => rotationStatus.value === RotationStatus.Rotating,
-  );
-
-  function getCurrentBearing(): number | null {
-    try {
-      return mapInstance.value?.getBearing() ?? null;
-    } catch {
-      logError('Error getting current bearing');
-      return null;
-    }
-  }
-
-  function getCurrentCamera(): CameraOptions | null {
-    const map = mapInstance.value;
-    if (!map) return null;
-    try {
-      return {
-        center: map.getCenter(),
-        zoom: map.getZoom(),
-        bearing: map.getBearing(),
-        pitch: map.getPitch(),
-      };
-    } catch {
-      logError('Error getting current camera');
-      return null;
-    }
-  }
-
-  function snapToNorth(options?: AnimationOptions): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const map = mapInstance.value;
-      if (!map) {
-        reject(new Error('Map instance not available'));
-        return;
-      }
-
-      try {
-        rotationStatus.value = RotationStatus.Rotating;
-        const finalOptions = options || animationOptions.value;
-
-        if (finalOptions) {
-          const onComplete = () => {
-            rotationStatus.value = RotationStatus.Completed;
-            resolve();
-          };
-          map.once('moveend', onComplete);
-          map.snapToNorth(finalOptions);
-        } else {
-          map.snapToNorth();
-          rotationStatus.value = RotationStatus.Completed;
-          resolve();
-        }
-      } catch (error) {
-        rotationStatus.value = RotationStatus.Error;
-        logError('Error performing snap-to-north operation:', error);
-        reject(error);
-      }
-    });
-  }
-
-  function stopRotating(): void {
-    try {
-      mapInstance.value?.stop();
-      rotationStatus.value = RotationStatus.Completed;
-    } catch {
-      logError('Error stopping rotation animation');
-    }
-  }
-
-  onUnmounted(() => {
-    rotationStatus.value = RotationStatus.Completed;
-  });
+  const {
+    execute,
+    stopRotating,
+    getCurrentBearing,
+    getCurrentCamera,
+    rotationStatus,
+    isRotating,
+    logError,
+  } = createSimpleRotation(props, 'snapToNorth', props.autoSnap !== false);
 
   if (isLegacyAPI) {
     return {
       snapToNorth: (options?: AnimationOptions) => {
-        snapToNorth(options).catch(() => {
-          logError('Error in legacy snapToNorth');
-        });
+        execute(options).catch((e) =>
+          logError('Error in legacy snapToNorth:', e),
+        );
       },
     };
   }
 
   return {
-    snapToNorth,
+    snapToNorth: execute,
     stopRotating,
     getCurrentBearing,
     getCurrentCamera,
-    rotationStatus: rotationStatus.value as Readonly<RotationStatus>,
-    isRotating: isRotating.value,
+    rotationStatus: computed(() => rotationStatus.value),
+    isRotating,
   };
 }

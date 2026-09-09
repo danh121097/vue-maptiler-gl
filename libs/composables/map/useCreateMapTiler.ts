@@ -1,27 +1,29 @@
-import {
-  ref,
-  shallowRef,
-  computed,
-  watchEffect,
-  unref,
-  onUnmounted,
-} from 'vue';
 import { useLogger } from '@libs/composables';
+import { isBrowser } from '@libs/helpers';
 import { MapCreationStatus } from '@libs/enums';
 import { type CreateMapTilerActions } from '@libs/types';
-import type { MaybeRef } from 'vue';
-import { Map } from '@maptiler/sdk';
 import type {
-  MapOptions,
+  CameraOptions,
   LngLatBoundsLike,
   LngLatLike,
-  StyleSpecification,
-  CameraOptions,
-  StyleSwapOptions,
+  MapOptions,
   StyleOptions,
+  StyleSpecification,
+  StyleSwapOptions,
 } from '@maptiler/sdk';
+import { Map } from '@maptiler/sdk';
+import type { ComputedRef, MaybeRef } from 'vue';
+import {
+  computed,
+  markRaw,
+  onUnmounted,
+  ref,
+  shallowRef,
+  unref,
+  watchEffect,
+} from 'vue';
 
-interface CreateMapTilerProps extends MapOptions {
+export interface CreateMapTilerProps extends MapOptions {
   register?: (actions: SimplifiedCreateMapTilerActions) => void;
   debug?: boolean;
   onLoad?: (map: Map) => void;
@@ -33,17 +35,17 @@ interface SimplifiedCreateMapTilerActions extends CreateMapTilerActions {
   getCurrentCamera: () => CameraOptions | null;
 
   // Essential status and state
-  mapCreationStatus: Readonly<MapCreationStatus>;
-  isMapReady: boolean;
-  isMapLoading: boolean;
-  hasMapError: boolean;
+  mapCreationStatus: ComputedRef<MapCreationStatus>;
+  isMapReady: ComputedRef<boolean>;
+  isMapLoading: ComputedRef<boolean>;
+  hasMapError: ComputedRef<boolean>;
 
   // Essential style management
-  getCurrentStyle: () => MapOptions['style'] | null;
+  getCurrentStyle: () => StyleSpecification | string | null;
 }
 
 /**
- * Composable for creating and managing MapTiler GL Maps with enhanced error handling
+ * Composable for creating and managing MapTiler SDK Maps with enhanced error handling
  * Provides reactive map management with validation, debugging, and comprehensive state management
  *
  * @param elRef - Reference to the HTML element container
@@ -53,7 +55,7 @@ interface SimplifiedCreateMapTilerActions extends CreateMapTilerActions {
  */
 export function useCreateMapTiler(
   elRef: MaybeRef<HTMLElement | undefined | null>,
-  styleRef: MaybeRef<MapOptions['style']>,
+  styleRef: MaybeRef<StyleSpecification | string>,
   props: Omit<CreateMapTilerProps, 'container' | 'style'> = {},
 ) {
   const { register, onLoad, onError, ...options } = props;
@@ -67,7 +69,7 @@ export function useCreateMapTiler(
   const mapOptions =
     shallowRef<Omit<MapOptions, 'container' | 'style'>>(options);
   const retryCount = ref<number>(0);
-  const currentStyle = shallowRef<MapOptions['style'] | null>(null);
+  const currentStyle = shallowRef<StyleSpecification | string | null>(null);
 
   // Computed properties for better reactivity and performance
   const mapInstanceComputed = computed(() => mapInstance.value);
@@ -83,23 +85,13 @@ export function useCreateMapTiler(
   );
 
   /**
-   * Validates if map operations can be performed safely
-   * @returns boolean indicating if operations can proceed
-   */
-  function validateMapOperation(): boolean {
-    const map = mapInstance.value;
-    if (!map) return false;
-    return true;
-  }
-
-  /**
    * Gets the current camera state
    * @returns Current camera options or null if not available
    */
   function getCurrentCamera(): CameraOptions | null {
-    if (!validateMapOperation()) return null;
+    const map = mapInstance.value;
+    if (!map) return null;
 
-    const map = mapInstance.value!;
     try {
       return {
         center: map.getCenter(),
@@ -117,14 +109,15 @@ export function useCreateMapTiler(
    * Gets the current map style
    * @returns Current style or null if not available
    */
-  function getCurrentStyle(): MapOptions['style'] | null {
-    if (!validateMapOperation()) return null;
+  function getCurrentStyle(): StyleSpecification | string | null {
+    const map = mapInstance.value;
+    if (!map) return null;
 
     try {
-      return mapInstance.value!.getStyle() as StyleSpecification;
+      return map.getStyle() as StyleSpecification;
     } catch (error) {
       logError('Error getting current style:', error);
-      return currentStyle.value as MapOptions['style'] | null;
+      return currentStyle.value as StyleSpecification | string | null;
     }
   }
 
@@ -145,6 +138,9 @@ export function useCreateMapTiler(
       return;
     }
 
+    // Skip on server (SSR) — MapTiler requires WebGL/canvas
+    if (!isBrowser) return;
+
     // Prevent double initialization
     if (mapInstance.value) return;
 
@@ -153,11 +149,15 @@ export function useCreateMapTiler(
     try {
       const mapOpts = unref(mapOptions);
 
-      mapInstance.value = new Map({
-        ...mapOpts,
-        style,
-        container: el,
-      });
+      // Use markRaw to prevent Vue's reactivity system from deeply observing
+      // MapTiler's internal objects - this is a critical performance optimization
+      mapInstance.value = markRaw(
+        new Map({
+          ...mapOpts,
+          style,
+          container: el,
+        }),
+      );
 
       // Use explicit type assertion to avoid deep type instantiation
       currentStyle.value = style as any;
@@ -214,10 +214,20 @@ export function useCreateMapTiler(
   }
 
   /**
-   * Enhanced map error event handler
+   * Map error event handler.
+   *
+   * MapTiler fires `error` for every failed resource — a 404 tile, a missing
+   * glyph range, a sprite fetch — not only for a map that could not start. Once
+   * `load` has fired the map is working, so those are runtime errors: they are
+   * reported to `onError` but leave the status alone. Flipping to `Error` here
+   * would tear down every consumer gated on `isMapReady` / `hasMapError` over a
+   * single bad tile, with no later event to bring them back. Before `load` the
+   * status still goes to `Error`, and a subsequent `load` clears it.
    */
   function mapEventError(e: any): void {
-    mapCreationStatus.value = MapCreationStatus.Error;
+    if (mapCreationStatus.value !== MapCreationStatus.Loaded) {
+      mapCreationStatus.value = MapCreationStatus.Error;
+    }
 
     if (onError) {
       onError(e);
@@ -236,10 +246,11 @@ export function useCreateMapTiler(
    * @param centerVal - Center coordinates to set
    */
   function setCenter(centerVal: LngLatLike): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     try {
-      mapInstance.value!.setCenter(centerVal);
+      map.setCenter(centerVal);
       // Update local state but avoid triggering watchers if possible
       const currentOpts = mapOptions.value;
       if (currentOpts.center !== centerVal) {
@@ -255,7 +266,8 @@ export function useCreateMapTiler(
    * @param bearing - Bearing value in degrees (default: 0)
    */
   function setBearing(bearing = 0): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     // Validate bearing range
     if (bearing < -180 || bearing > 180) {
@@ -265,7 +277,7 @@ export function useCreateMapTiler(
     }
 
     try {
-      mapInstance.value!.setBearing(bearing);
+      map.setBearing(bearing);
       mapOptions.value.bearing = bearing;
     } catch (error) {
       logError('Error setting map bearing:', error, { bearing });
@@ -277,7 +289,8 @@ export function useCreateMapTiler(
    * @param zoom - Zoom level to set
    */
   function setZoom(zoom: number): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     // Validate zoom range
     if (zoom < 0 || zoom > 24) {
@@ -285,7 +298,7 @@ export function useCreateMapTiler(
     }
 
     try {
-      mapInstance.value!.setZoom(zoom);
+      map.setZoom(zoom);
       mapOptions.value.zoom = zoom;
     } catch (error) {
       logError('Error setting map zoom:', error, { zoom });
@@ -297,7 +310,8 @@ export function useCreateMapTiler(
    * @param pitch - Pitch value in degrees
    */
   function setPitch(pitch: number): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     // Validate pitch range
     if (pitch < 0 || pitch > 60) {
@@ -305,7 +319,7 @@ export function useCreateMapTiler(
     }
 
     try {
-      mapInstance.value!.setPitch(pitch);
+      map.setPitch(pitch);
       mapOptions.value.pitch = pitch;
     } catch (error) {
       logError('Error setting map pitch:', error, { pitch });
@@ -321,10 +335,11 @@ export function useCreateMapTiler(
     style: Exclude<MapOptions['style'], undefined>,
     options?: StyleSwapOptions & StyleOptions,
   ): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     try {
-      mapInstance.value!.setStyle(style, options);
+      map.setStyle(style, options);
       // Use explicit type assertion to avoid deep type instantiation
       currentStyle.value = style as any;
     } catch (error) {
@@ -337,10 +352,11 @@ export function useCreateMapTiler(
    * @param bounds - Maximum bounds to set
    */
   function setMaxBounds(bounds?: LngLatBoundsLike): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     try {
-      mapInstance.value!.setMaxBounds(bounds);
+      map.setMaxBounds(bounds);
       mapOptions.value.maxBounds = bounds;
     } catch (error) {
       logError('Error setting map max bounds:', error, { bounds });
@@ -352,7 +368,8 @@ export function useCreateMapTiler(
    * @param pitch - Maximum pitch value (default: 60)
    */
   function setMaxPitch(pitch = 60): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     if (pitch < 0 || pitch > 60) {
       logWarn('Warning: Max pitch should be between 0 and 60 degrees', {
@@ -361,7 +378,7 @@ export function useCreateMapTiler(
     }
 
     try {
-      mapInstance.value!.setMaxPitch(pitch);
+      map.setMaxPitch(pitch);
       mapOptions.value.maxPitch = pitch;
     } catch (error) {
       logError('Error setting map max pitch:', error, { pitch });
@@ -373,14 +390,15 @@ export function useCreateMapTiler(
    * @param zoom - Maximum zoom level (default: 24)
    */
   function setMaxZoom(zoom = 24): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     if (zoom < 0 || zoom > 24) {
       logWarn('Warning: Max zoom should be between 0 and 24', { zoom });
     }
 
     try {
-      mapInstance.value!.setMaxZoom(zoom);
+      map.setMaxZoom(zoom);
       mapOptions.value.maxZoom = zoom;
     } catch (error) {
       logError('Error setting map max zoom:', error, { zoom });
@@ -392,7 +410,8 @@ export function useCreateMapTiler(
    * @param pitch - Minimum pitch value (default: 0)
    */
   function setMinPitch(pitch = 0): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     if (pitch < 0 || pitch > 60) {
       logWarn('Warning: Min pitch should be between 0 and 60 degrees', {
@@ -401,7 +420,7 @@ export function useCreateMapTiler(
     }
 
     try {
-      mapInstance.value!.setMinPitch(pitch);
+      map.setMinPitch(pitch);
       mapOptions.value.minPitch = pitch;
     } catch (error) {
       logError('Error setting map min pitch:', error, { pitch });
@@ -413,14 +432,15 @@ export function useCreateMapTiler(
    * @param zoom - Minimum zoom level (default: 0)
    */
   function setMinZoom(zoom = 0): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     if (zoom < 0 || zoom > 24) {
       logWarn('Warning: Min zoom should be between 0 and 24', { zoom });
     }
 
     try {
-      mapInstance.value!.setMinZoom(zoom);
+      map.setMinZoom(zoom);
       mapOptions.value.minZoom = zoom;
     } catch (error) {
       logError('Error setting map min zoom:', error, { zoom });
@@ -432,10 +452,11 @@ export function useCreateMapTiler(
    * @param renderWorldCopies - Whether to render world copies (default: true)
    */
   function setRenderWorldCopies(renderWorldCopies = true): void {
-    if (!validateMapOperation()) return;
+    const map = mapInstance.value;
+    if (!map) return;
 
     try {
-      mapInstance.value!.setRenderWorldCopies(renderWorldCopies);
+      map.setRenderWorldCopies(renderWorldCopies);
       mapOptions.value.renderWorldCopies = renderWorldCopies;
     } catch (error) {
       logError('Error setting map render world copies:', error, {
@@ -452,19 +473,9 @@ export function useCreateMapTiler(
     mapCreationStatus.value = MapCreationStatus.Destroyed;
   }
 
-  /**
-   * Checks if map should be initialized based on options
-   */
-  function checkInitMap(): void {
-    const opts = unref(mapOptions);
-    if (!opts.center && !opts.bounds) {
-      log('Map initialization skipped: no center or bounds provided');
-      return;
-    }
-    initMap();
-  }
-
-  // Watch effect for automatic map initialization
+  // Watch effect for automatic map initialization. It calls initMap directly:
+  // a map without a center or bounds is valid — MapTiler defaults to [0, 0] at
+  // zoom 0 — so there is nothing to gate on here.
   const stopWatchEffect = watchEffect(() => {
     const el = unref(elRef);
     if (el && !mapInstance.value) {
@@ -497,10 +508,10 @@ export function useCreateMapTiler(
 
     // Simplified essential actions
     getCurrentCamera,
-    mapCreationStatus: mapCreationStatusComputed.value,
-    isMapReady: isMapReady.value,
-    isMapLoading: isMapLoading.value,
-    hasMapError: hasMapError.value,
+    mapCreationStatus: mapCreationStatusComputed,
+    isMapReady,
+    isMapLoading,
+    hasMapError,
     getCurrentStyle,
   };
 
@@ -510,7 +521,6 @@ export function useCreateMapTiler(
   return {
     initMap,
     removeMap,
-    checkInitMap,
     destroyMap,
     ...methods,
   };

@@ -1,16 +1,18 @@
-# Vue3 MapTiler GL
+# Vue3 MapTiler SDK
 
-[![npm](https://img.shields.io/npm/v/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Downloads](https://img.shields.io/npm/dt/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Stars](https://img.shields.io/github/stars/danh121097/vue-mapTiler-gl?style=flat-square)](https://github.com/danh121097/vue-mapTiler-gl/stargazers) [![License](https://img.shields.io/npm/l/vue3-maptiler-gl)](https://github.com/danh121097/vue-mapTiler-gl/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Downloads](https://img.shields.io/npm/dt/vue3-maptiler-gl)](https://www.npmjs.com/package/vue3-maptiler-gl) [![Stars](https://img.shields.io/github/stars/danh121097/vue-maptiler-gl?style=flat-square)](https://github.com/danh121097/vue-maptiler-gl/stargazers) [![License](https://img.shields.io/npm/l/vue3-maptiler-gl)](https://github.com/danh121097/vue-maptiler-gl/blob/main/LICENSE)
 
-> **The most comprehensive Vue 3 library for MapTiler GL JS** - Build interactive maps with 10+ components and 15+ composables
+> **The most comprehensive Vue 3 library for MapTiler SDK** - Build interactive maps with 10 components and 38 composables
 
-A powerful, feature-rich Vue 3 component library that provides an intuitive, reactive way to build interactive maps in your Vue applications using MapTiler GL JS.
+A powerful, feature-rich Vue 3 component library that provides an intuitive, reactive way to build interactive maps in your Vue applications using MapTiler SDK.
+
+`@maptiler/sdk` is a peer dependency, re-exported from this package so your app and this one always share a single copy of the MapTiler runtime. npm and Bun would install it on their own; Yarn and pnpm would not, so the commands below name it explicitly.
 
 ## ✨ Features
 
 - 🗺️ **Interactive Maps** - High-performance vector maps with WebGL rendering
-- 🧩 **10+ Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, PopUp, Image, GeolocateControls
-- 🔧 **15+ Composables** - Complete map management, animations, events, and utilities
+- 🧩 **10+ Vue Components** - MapTiler, GeoJsonSource, FillLayer, CircleLayer, LineLayer, SymbolLayer, Marker, Popup, Image, GeolocateControls
+- 🔧 **38 Composables** - Complete map management, animations, events, and utilities
 - 🎯 **Full TypeScript Support** - Comprehensive type definitions and interfaces
 - ⚡ **High Performance** - Optimized rendering with automatic resource cleanup
 - 📱 **Mobile-Friendly** - Touch controls and responsive design for all devices
@@ -19,22 +21,28 @@ A powerful, feature-rich Vue 3 component library that provides an intuitive, rea
 
 ## 📦 Installation
 
-### Using Yarn (Recommended)
+### Using Bun (Recommended)
 
 ```bash
-yarn add vue3-maptiler-gl
+bun add vue3-maptiler-gl @maptiler/sdk
 ```
 
 ### Using npm
 
 ```bash
-npm install vue3-maptiler-gl
+npm install vue3-maptiler-gl @maptiler/sdk
+```
+
+### Using Yarn
+
+```bash
+yarn add vue3-maptiler-gl @maptiler/sdk
 ```
 
 ### Using pnpm
 
 ```bash
-pnpm add vue3-maptiler-gl
+pnpm add vue3-maptiler-gl @maptiler/sdk
 ```
 
 ## 🚀 Quick Start
@@ -54,12 +62,12 @@ pnpm add vue3-maptiler-gl
     </Marker>
 
     <!-- Popup -->
-    <PopUp :lnglat="[0, 0]" :show="true">
+    <Popup :lnglat="[0, 0]" :show="true">
       <div class="popup-content">
-        <h3>Welcome to Vue3 MapTiler GL!</h3>
+        <h3>Welcome to Vue3 MapTiler SDK!</h3>
         <p>Interactive maps made easy with Vue 3</p>
       </div>
-    </PopUp>
+    </Popup>
 
     <!-- Geolocation Control -->
     <GeolocateControls position="top-right" />
@@ -74,13 +82,14 @@ import {
   FillLayer,
   CircleLayer,
   Marker,
-  PopUp,
+  Popup,
   GeolocateControls,
 } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -126,7 +135,7 @@ function onMapLoad(map) {
 
 ## 🧩 Components
 
-Vue3 MapTiler GL provides 10+ reactive Vue components:
+Vue3 MapTiler SDK provides 10+ reactive Vue components:
 
 | Component             | Description                                                   |
 | --------------------- | ------------------------------------------------------------- |
@@ -137,7 +146,7 @@ Vue3 MapTiler GL provides 10+ reactive Vue components:
 | **LineLayer**         | Render linear features like routes and boundaries             |
 | **SymbolLayer**       | Display icons and text labels                                 |
 | **Marker**            | HTML markers with drag support and custom content             |
-| **PopUp**             | Interactive popup windows with custom HTML                    |
+| **Popup**             | Interactive popup windows with custom HTML                    |
 | **Image**             | Manage and load images for map styles                         |
 | **GeolocateControls** | User location tracking with comprehensive events              |
 
@@ -176,13 +185,13 @@ Vue3 MapTiler GL provides 10+ reactive Vue components:
 - `useFlyTo` - Smooth map animations
 - `useEaseTo` - Easing animations
 - `useJumpTo` - Instant position changes
-- `useBounds` - Bounds management
-- `useZoom` - Zoom controls
+- `useFitBounds` - Fit the camera to a bounding box
+- `useZoomTo` - Zoom to a level
 - `useLogger` - Consistent logging
 
 ## 🎯 TypeScript Support
 
-Vue3 MapTiler GL includes comprehensive TypeScript support:
+Vue3 MapTiler SDK includes comprehensive TypeScript support:
 
 ```typescript
 import { ref } from 'vue';
@@ -190,13 +199,13 @@ import {
   MapTiler,
   GeoJsonSource,
   FillLayer,
-  type MapTiler,
+  type MapOptions,
   type FillLayerStyle,
   type GeoJSONSourceSpecification,
 } from 'vue3-maptiler-gl';
 
-const mapOptions = ref<MapTilerProps['options']>({
-  style: 'YOUR_STYLE',
+const mapOptions = ref<Partial<MapOptions>>({
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -212,6 +221,34 @@ const geoJsonData = ref<GeoJSONSourceSpecification['data']>({
 });
 ```
 
+MapTiler SDK **types** come from the package root, because types cost nothing at runtime:
+
+```typescript
+import type { Map, MapOptions, StyleSpecification } from 'vue3-maptiler-gl';
+```
+
+MapTiler SDK **runtime classes** live on the `/maptiler` subpath, so importing a component from the root does not pin the whole MapTiler runtime into your bundle:
+
+```typescript
+import {
+  Map,
+  NavigationControl,
+  MapTilerMarker,
+} from 'vue3-maptiler-gl/maptiler';
+```
+
+`Marker` and `Popup` collide with the Vue components of the same name, so they are re-exported as `MapTilerMarker` / `MapTilerPopup` — or reach them through the namespace:
+
+```typescript
+import { MapTilerPopup, maptilersdk } from 'vue3-maptiler-gl/maptiler';
+import { Marker } from 'vue3-maptiler-gl';
+
+const popup = new MapTilerPopup();
+const marker = new maptilersdk.Marker();
+```
+
+`Marker` in the example above is the Vue component; importing straight from `@maptiler/sdk` works too.
+
 ## 🌟 Advanced Example with Composables
 
 ```vue
@@ -225,7 +262,7 @@ import {
 } from 'vue3-maptiler-gl';
 
 const mapContainer = ref();
-const mapStyle = ref('YOUR_STYLE');
+const mapStyle = ref('https://demotiles.maplibre.org/style.json');
 
 // Create map with enhanced error handling
 const { mapInstance, setCenter, setZoom } = useCreateMapTiler(
@@ -252,7 +289,7 @@ const { setData } = useCreateGeoJsonSource({
 useMapEventListener({
   map: mapInstance,
   event: 'click',
-  handler: (event) => {
+  on: (event) => {
     flyTo({
       center: event.lngLat,
       zoom: 12,
@@ -281,24 +318,24 @@ git clone https://github.com/danh121097/vue-maptiler-gl.git
 cd vue-maptiler-gl
 
 # Install dependencies
-yarn install
+bun install
 
 # Start development server
-yarn dev
+bun run dev
 
 # Build the library
-yarn build
+bun run build
 
 # Run documentation
-yarn docs:dev
+bun run docs:dev
 ```
 
-## 🌟 Why Choose Vue3 MapTiler GL?
+## 🌟 Why Choose Vue3 MapTiler SDK?
 
 - **🎯 Vue 3 Native** - Built specifically for Vue 3 with Composition API support
-- **🗺️ MapTiler GL JS** - Uses the open-source MapTiler GL JS for high-performance rendering
+- **🗺️ MapTiler SDK** - Uses the open-source MapTiler SDK for high-performance rendering
 - **🧩 Component-Based** - 10+ Vue components for maps, layers, sources, markers, and controls
-- **🔧 Powerful Composables** - 15+ composables for map management, animations, and utilities
+- **🔧 Powerful Composables** - 38 composables for map management, animations, and utilities
 - **📚 Comprehensive Documentation** - Detailed guides, API references, and examples
 - **⚡ High Performance** - Optimized for performance with automatic resource cleanup
 - **🌐 Open Source** - MIT licensed with active community support
@@ -316,19 +353,19 @@ git clone https://github.com/danh121097/vue-maptiler-gl.git
 cd vue-maptiler-gl
 
 # Install dependencies
-yarn install
+bun install
 
 # Start development server
-yarn dev
+bun run dev
 
 # Run tests
-yarn test
+bun run test
 
 # Build the library
-yarn build
+bun run build
 
 # Run documentation
-yarn docs:dev
+bun run docs:dev
 ```
 
 ## 📄 License
@@ -337,7 +374,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built on top of [MapTiler GL JS](https://docs.maptiler.com/) - The open-source mapping library
+- Built on top of [MapTiler SDK](https://docs.maptiler.com/sdk-js/) - The open-source mapping library
 - Inspired by the Vue.js ecosystem and community
 - Thanks to all contributors and users who make this project better
 

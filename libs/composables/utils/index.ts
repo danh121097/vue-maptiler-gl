@@ -1,3 +1,5 @@
+export * from './cameraAnimationTypes';
+export * from './createCameraAnimation';
 export * from './useBounds';
 export * from './useDebounce';
 export * from './useEaseTo';
@@ -5,7 +7,6 @@ export * from './useFitScreenCoordinates';
 export * from './useFlyTo';
 export * from './useJumpTo';
 export * from './useLogger';
-export * from './useOptimizedComputed';
 export * from './usePan';
 export * from './useRotate';
 export * from './useZoom';

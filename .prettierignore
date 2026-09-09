@@ -7,3 +7,10 @@
 **/*.sh
 
 /public/*
+
+# Written by `bun run changelog` from git-cliff output, whose wrapping Prettier
+# would rewrite; formatting it here would fail format:check on the next push.
+# The file does not exist yet: the ported one described a version history this
+# package never had and was removed. The first release written from this
+# repository's own commits recreates it.
+docs/changelog.md

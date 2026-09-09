@@ -1,6 +1,6 @@
 # Basic Map
 
-Learn how to create a simple map with Vue MapTiler GL.
+Learn how to create a simple map with Vue MapTiler SDK.
 
 ## Simple Map
 
@@ -20,10 +20,11 @@ The most basic example - just a map with a style:
 <script setup>
 import { ref } from 'vue';
 import { MapTiler } from 'vue3-maptiler-gl';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -44,48 +45,70 @@ function onMapLoad(map) {
 
 ## Map with Custom Style
 
-Using a different map style:
+Using a different map style.
+
+::: warning An inline style object has to be applied after construction
+The MapTiler SDK does not accept a `StyleSpecification` **object** as the
+constructor's `style` — the map silently never loads and nothing throws. Pass a
+style URL to `:options`, then apply the object with `setStyle()` once the map
+registers, as below. See [Migration from v1](/guide/migration-v1-to-v2) for the
+full explanation.
+:::
 
 ```vue
 <template>
   <div class="map-container">
-    <MapTiler :options="mapOptions" style="height: 400px; width: 100%;" />
+    <MapTiler
+      :options="mapOptions"
+      style="height: 400px; width: 100%;"
+      @register="onRegister"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { MapTiler } from 'vue3-maptiler-gl';
+import { MapTiler, useMapTiler } from 'vue3-maptiler-gl';
 
+const { register: onRegister, setStyle } = useMapTiler();
+
+// A URL at construction, because the SDK requires one there.
 const mapOptions = ref({
-  style: {
-    version: 8,
-    sources: {
-      'raster-tiles': {
-        type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-        tileSize: 256,
-        attribution: '© OpenStreetMap contributors',
-      },
-    },
-    layers: [
-      {
-        id: 'background',
-        type: 'background',
-        paint: {
-          'background-color': '#f0f0f0',
-        },
-      },
-      {
-        id: 'raster-layer',
-        type: 'raster',
-        source: 'raster-tiles',
-      },
-    ],
-  },
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [-74.006, 40.7128], // New York
   zoom: 10,
 });
+
+// The object style, applied once the map exists.
+const rasterStyle = ref({
+  version: 8,
+  sources: {
+    'raster-tiles': {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [
+    {
+      id: 'background',
+      type: 'background',
+      paint: {
+        'background-color': '#f0f0f0',
+      },
+    },
+    {
+      id: 'raster-layer',
+      type: 'raster',
+      source: 'raster-tiles',
+    },
+  ],
+});
+
+function applyRasterStyle() {
+  setStyle(rasterStyle.value);
+}
 </script>
 ```
 
@@ -118,7 +141,7 @@ import { ref } from 'vue';
 import { MapTiler } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -201,7 +224,7 @@ const selectedStyle = ref('demotiles');
 const mapInstance = ref(null);
 
 const styles = {
-  demotiles: 'YOUR_STYLE',
+  demotiles: 'https://demotiles.maplibre.org/style.json',
   osm: {
     version: 8,
     sources: {
@@ -290,5 +313,5 @@ function changeStyle() {
 ## Related APIs
 
 - [MapTiler Component](/api/components#maptiler)
-- [MapTiler Composable](/api/composables#usecreatemaptiler)
-- [Map Events](/api/types#map-events)
+- [useCreateMapTiler Composable](/api/composables#usecreatemaptiler)
+- [Event Handler Types](/api/types#event-handler-types)

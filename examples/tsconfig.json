@@ -18,6 +18,8 @@
     "types": ["vite/client", "../types/maptiler.d.ts"],
     "paths": {
       "@": ["./src"],
+      "vue3-maptiler-gl": ["../libs/index.ts"],
+      "vue3-maptiler-gl/maptiler": ["../libs/maptiler-reexports.ts"],
       "@libs/types": ["../libs/types"],
       "@libs/composables": ["../libs/composables"],
       "@libs/enums": ["../libs/enums"],

@@ -1,17 +1,18 @@
+import { isBrowser } from '@libs/helpers';
 import {
-  watchEffect,
   watch,
   unref,
   shallowRef,
   computed,
   ref,
+  onScopeDispose,
   onUnmounted,
 } from 'vue';
 import { Marker } from '@maptiler/sdk';
 import { lngLatLikeHasValue } from '@libs/helpers';
 import { useLogger } from '@libs/composables';
 import type { Nullable } from '@libs/types';
-import type { MaybeRef, Ref } from 'vue';
+import type { ComputedRef, MaybeRef, Ref } from 'vue';
 import type {
   Alignment,
   Listener,
@@ -30,7 +31,6 @@ export enum MarkerStatus {
   Creating = 'creating',
   Created = 'created',
   Error = 'error',
-  Removed = 'removed',
 }
 
 interface MarkerEventHandlers {
@@ -51,9 +51,9 @@ interface CreateMarkerProps {
 }
 
 interface CreateMarkerActions {
-  marker: Readonly<Nullable<Marker>>;
-  markerStatus: Readonly<MarkerStatus>;
-  isMarkerCreated: boolean;
+  marker: ComputedRef<Nullable<Marker>>;
+  markerStatus: ComputedRef<MarkerStatus>;
+  isMarkerCreated: ComputedRef<boolean>;
   setLngLat: (lnglat: LngLatLike) => void;
   setPopup: (popup?: Popup | null) => void;
   setOffset: (offset: PointLike) => void;
@@ -74,7 +74,7 @@ interface CreateMarkerActions {
 }
 
 /**
- * Composable for managing MapTiler GL Markers
+ * Composable for managing MapTiler SDK Markers
  * Provides reactive marker with error handling, performance optimizations, and enhanced API
  *
  * @param props - Configuration options for the marker
@@ -135,7 +135,7 @@ export function useCreateMarker({
   function createMarker(): void {
     const map = mapInstance.value;
 
-    if (!map) return;
+    if (!isBrowser || !map) return;
 
     if (marker.value) return;
 
@@ -177,16 +177,37 @@ export function useCreateMarker({
     }
   }
 
-  // Watch for map changes and manage marker lifecycle
-  watchEffect((onCleanUp) => {
-    const map = mapInstance.value;
-    if (map && markerStatus.value === MarkerStatus.NotCreated) {
-      createMarker();
-    } else if (!map && markerStatus.value === MarkerStatus.Created) {
+  // Watch the map instance, not a `watchEffect` over `markerStatus`: both
+  // branches below write that status, so an effect tracked its own writes and
+  // its cleanup tore the marker down on every re-run.
+  watch(
+    mapInstance,
+    (map) => {
+      // A replaced map means the marker has to move with it.
+      if (marker.value) removeMarker();
+      if (map) createMarker();
+    },
+    { immediate: true },
+  );
+
+  // MapTiler bakes the element into the Marker at construction time, and a
+  // template ref is still `undefined` during `setup()`. A custom element that
+  // resolves after the map therefore has to rebuild the marker, not update it —
+  // otherwise the map keeps the default pin for good.
+  watch(
+    () => el?.value,
+    (element) => {
+      if (!element || !mapInstance.value) return;
+      if (marker.value?.getElement() === element) return;
+
       removeMarker();
-    }
-    onCleanUp(removeMarker);
-  });
+      createMarker();
+    },
+  );
+
+  // Release the marker when the owning scope stops, which `watchEffect`'s
+  // cleanup used to cover.
+  onScopeDispose(removeMarker);
 
   // Watch for popup changes
   watch(popupValue, (newPopup) => {
@@ -383,11 +404,13 @@ export function useCreateMarker({
 
       // Remove from map
       marker.value.remove();
-
-      markerStatus.value = MarkerStatus.Removed;
     } catch (error) {
       logError('Error removing marker:', error);
     } finally {
+      // Back to NotCreated, not a distinct "removed" state: a removed marker is
+      // exactly a marker that has not been created, and the map watcher below
+      // recreates one from here. A second enum member for the same state would
+      // only be a value consumers have to handle twice.
       marker.value = null;
       markerStatus.value = MarkerStatus.NotCreated;
     }
@@ -477,9 +500,9 @@ export function useCreateMarker({
   onUnmounted(cleanup);
 
   return {
-    marker: marker.value,
-    markerStatus: markerStatus.value,
-    isMarkerCreated: isMarkerCreated.value,
+    marker: computed(() => marker.value),
+    markerStatus: computed(() => markerStatus.value),
+    isMarkerCreated,
     setLngLat,
     setPopup,
     setOffset,

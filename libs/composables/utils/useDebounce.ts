@@ -4,7 +4,7 @@ import { useLogger } from './useLogger';
 /**
  * Debounce options interface
  */
-interface DebounceOptions {
+export interface DebounceOptions {
   /** Delay in milliseconds (default: 300) */
   delay?: number;
   /** Whether to trigger on the leading edge (default: false) */
@@ -48,8 +48,8 @@ export function useDebounce<T extends (...args: any[]) => any>(
 
   const { log, logError } = useLogger(debug);
 
-  let timeoutId: number | undefined;
-  let maxTimeoutId: number | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let maxTimeoutId: ReturnType<typeof setTimeout> | undefined;
   let lastCallTime: number | undefined;
   let lastInvokeTime = 0;
   let lastArgs: Parameters<T> | undefined;
@@ -99,10 +99,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
       return trailingEdge(time);
     }
     // Restart the timer
-    timeoutId = window.setTimeout(
-      timerExpired,
-      delay - (time - (lastCallTime || 0)),
-    );
+    timeoutId = setTimeout(timerExpired, delay - (time - (lastCallTime || 0)));
   }
 
   /**
@@ -123,7 +120,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
    */
   function leadingEdge(time: number): ReturnType<T> {
     lastInvokeTime = time;
-    timeoutId = window.setTimeout(timerExpired, delay);
+    timeoutId = setTimeout(timerExpired, delay);
     return leading ? invokeFunc(time) : result;
   }
 
@@ -173,8 +170,8 @@ export function useDebounce<T extends (...args: any[]) => any>(
         leadingEdge(lastCallTime);
       } else if (maxWait !== undefined) {
         // Handle maxWait
-        timeoutId = window.setTimeout(timerExpired, delay);
-        maxTimeoutId = window.setTimeout(() => {
+        timeoutId = setTimeout(timerExpired, delay);
+        maxTimeoutId = setTimeout(() => {
           if (lastArgs) {
             invokeFunc(Date.now());
           }
@@ -184,7 +181,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
         }
       }
     } else if (timeoutId === undefined) {
-      timeoutId = window.setTimeout(timerExpired, delay);
+      timeoutId = setTimeout(timerExpired, delay);
     }
   }
 

@@ -1,9 +1,10 @@
 {
   "name": "vue3-maptiler-gl",
-  "description": "Vue 3 components and composables for MapTiler GL JS - Build interactive maps with ease",
-  "version": "1.0.1",
+  "description": "Vue 3 components and composables for MapTiler SDK - Build interactive maps with ease",
+  "version": "2.0.0",
   "author": {
-    "name": "Danh Nguyen"
+    "name": "Danh Nguyen",
+    "url": "https://harrynguyen.work"
   },
   "repository": {
     "type": "git",
@@ -15,7 +16,7 @@
     "vue",
     "vue3",
     "maptiler",
-    "maptiler-gl",
+    "maptiler-sdk",
     "maps",
     "typescript",
     "components",
@@ -28,15 +29,19 @@
     "LICENSE"
   ],
   "module": "./dist/index.js",
-  "main": "./dist/index.umd.cjs",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.umd.cjs",
       "default": "./dist/index.js"
+    },
+    "./maptiler": {
+      "types": "./dist/maptiler-reexports.d.ts",
+      "import": "./dist/maptiler-reexports.js",
+      "default": "./dist/maptiler-reexports.js"
     },
     "./style.css": {
       "default": "./dist/style.css"
@@ -57,31 +62,38 @@
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "*.css",
-    "*.vue"
+    "*.css"
   ],
   "scripts": {
     "dev": "cd examples && vite --port 8080",
-    "build": "yarn clean && vite build",
+    "build": "bun run clean && vite build",
     "clean": "rm -rf dist",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
     "lint:check": "eslint . --ext .vue,.js,.ts,.jsx,.tsx",
     "format": "prettier --write \"./**/*.{html,vue,ts,js,json,md}\"",
     "format:check": "prettier --check \"./**/*.{html,vue,ts,js,json,md}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "type-check": "vue-tsc --noEmit",
-    "test:build": "yarn build && yarn pack --dry-run",
-    "prepublishOnly": "yarn lint:check && yarn type-check && yarn build",
-    "deploy": "yarn build && yarn publish",
+    "parity:check": "bun run build/assert-parity.ts",
+    "test:build": "bun run build && bun pm pack --dry-run",
+    "prepublishOnly": "bun run format:check && bun run lint:check && bun run type-check && bun run test:coverage && bun run build && bun run docs:check",
+    "publish:vue": "bun run build/assert-version-unpublished.ts package.json && bun run parity:check -- --strict && bun run build && npm publish --access public",
+    "publish:nuxt": "bun run build/assert-version-unpublished.ts nuxt/package.json && bun run build/assert-nuxt-dependency-published.ts && cd nuxt && bun install && bun run build && npm --prefix nuxt publish --access public",
+    "changelog": "bun run build/update-changelog.ts",
+    "docs:check": "bun run build/docs-snippets/check-doc-snippets.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
   "peerDependencies": {
+    "@maptiler/sdk": "^4.1.0",
     "vue": "^3.0.0"
   },
   "devDependencies": {
-    "@maptiler/sdk": "^3.9.0",
+    "@maptiler/sdk": "^4.1.0",
     "@turf/bbox": "^7.0.0",
     "@turf/circle": "^7.0.0",
     "@turf/helpers": "^7.0.0",
@@ -90,13 +102,14 @@
     "@typescript-eslint/eslint-plugin": "^7.11.0",
     "@typescript-eslint/parser": "^7.11.0",
     "@vitejs/plugin-vue": "^5.0.5",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "eslint-plugin-unused-imports": "^4.0.0",
     "eslint-plugin-vue": "^9.26.0",
-    "nanoid": "^5.0.7",
-    "prettier": "^3.3.1",
+    "happy-dom": "^20.8.9",
+    "prettier": "3.6.2",
     "sass": "^1.77.4",
     "terser": "^5.43.1",
     "tsc-alias": "^1.8.10",
@@ -105,7 +118,8 @@
     "vite-plugin-dts": "^3.9.1",
     "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^4.3.2",
-    "vitepress": "^1.0.0-rc.44",
+    "vitepress": "^1.6.4",
+    "vitest": "^4.1.11",
     "vue": "^3.5.17",
     "vue-eslint-parser": "^9.4.3",
     "vue-router": "^4.3.2",
@@ -114,8 +128,5 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx,cjs,mjs,vue}": "eslint --fix",
     "*.{ts,tsx,js,jsx,cjs,mjs,css,scss,less,md,vue}": "prettier --write"
-  },
-  "dependencies": {
-    "vue3-maptiler-gl": "^1.0.1"
   }
 }

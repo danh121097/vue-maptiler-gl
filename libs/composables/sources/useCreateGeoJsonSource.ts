@@ -1,22 +1,23 @@
-import {
-  unref,
-  shallowRef,
-  computed,
-  onUnmounted,
-  onMounted,
-  nextTick,
-  ref,
-} from 'vue';
-import { getMainVersion, getNanoid, hasSource } from '@libs/helpers';
-import { useMapReloadEvent, useLogger } from '@libs/composables';
-import type { MaybeRef, ShallowRef } from 'vue';
+import { useLogger, useMapReloadEvent } from '@libs/composables';
+import { getNanoid, hasSource } from '@libs/helpers';
 import type { Nullable } from '@libs/types';
 import type {
-  Map,
   GeoJSONSource,
-  MapSourceDataEvent,
   GeoJSONSourceSpecification,
+  Map,
+  MapSourceDataEvent,
 } from '@maptiler/sdk';
+import type { ComputedRef, MaybeRef, ShallowRef } from 'vue';
+import {
+  computed,
+  markRaw,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  unref,
+} from 'vue';
 
 /**
  * Source creation status enum for better state management
@@ -34,11 +35,11 @@ export interface CreateGeoJsonSourceActions {
   setData: (data: GeoJSONSourceSpecification['data']) => void;
   removeSource: () => void;
   refreshSource: () => void;
-  sourceStatus: Readonly<SourceStatus>;
-  isSourceReady: boolean;
+  sourceStatus: ComputedRef<SourceStatus>;
+  isSourceReady: ComputedRef<boolean>;
 }
 
-interface CreateGeoJsonSourceProps {
+export interface CreateGeoJsonSourceProps {
   map: MaybeRef<Nullable<Map>>;
   id?: string;
   data: GeoJSONSourceSpecification['data'];
@@ -56,7 +57,7 @@ const DEFAULT_GEOJSON_DATA: GeoJSONSourceSpecification['data'] = {
 };
 
 /**
- * Composable for creating and managing MapTiler GL GeoJSON Sources
+ * Composable for creating and managing MapTiler SDK GeoJSON Sources
  * Provides reactive GeoJSON source with error handling, performance optimizations, and enhanced API
  *
  * @param props - Configuration options for the GeoJSON source
@@ -74,9 +75,17 @@ export function useCreateGeoJsonSource({
   const sourceId = getNanoid(id);
   const source = shallowRef<Nullable<GeoJSONSource>>(null);
   const sourceStatus = ref<SourceStatus>(SourceStatus.NotCreated);
+  // The data the source should currently hold. Creation is deferred and a
+  // style reload rebuilds the source, so `setData` records here and
+  // `initSource` builds from it rather than from the setup-time value.
+  let currentData = data;
+  // Set on unmount so the deferred mount-time creation cannot add a source
+  // after the teardown that would have removed it has already run.
+  let isDisposed = false;
 
   // Computed properties for better reactivity and performance
   const getSource = computed(() => source.value);
+  const sourceStatusComputed = computed(() => sourceStatus.value);
   const mapInstance = computed(() => unref(mapRef));
   const isSourceReady = computed(
     () =>
@@ -89,7 +98,7 @@ export function useCreateGeoJsonSource({
   useMapReloadEvent({
     map: mapRef,
     callbacks: {
-      onUnload: removeSource,
+      onUnload: removeSourceFrom,
       onLoad: initSource,
     },
     debug,
@@ -104,11 +113,9 @@ export function useCreateGeoJsonSource({
       const map = mapInstance.value;
       if (!map) return;
 
-      let isSourceLoaded = e.isSourceLoaded;
-      if (getMainVersion() > 0) isSourceLoaded = true;
-
-      if (!source.value && e.sourceId === sourceId && isSourceLoaded) {
-        source.value = map.getSource(sourceId) as GeoJSONSource;
+      if (!source.value && e.sourceId === sourceId) {
+        // Use markRaw to prevent Vue reactivity overhead on MapTiler source objects
+        source.value = markRaw(map.getSource(sourceId) as GeoJSONSource);
         sourceStatus.value = SourceStatus.Created;
 
         register?.(
@@ -118,8 +125,8 @@ export function useCreateGeoJsonSource({
             setData,
             removeSource,
             refreshSource,
-            sourceStatus: sourceStatus.value as Readonly<SourceStatus>,
-            isSourceReady: isSourceReady.value,
+            sourceStatus: sourceStatusComputed,
+            isSourceReady,
           },
           map,
         );
@@ -141,7 +148,7 @@ export function useCreateGeoJsonSource({
 
     if (source.value || hasSource(map, sourceId)) return;
 
-    if (!data) return;
+    if (!currentData) return;
 
     sourceStatus.value = SourceStatus.Creating;
 
@@ -149,7 +156,7 @@ export function useCreateGeoJsonSource({
       const sourceSpec: GeoJSONSourceSpecification = {
         ...options,
         type: 'geojson',
-        data,
+        data: currentData,
       };
 
       map.addSource(sourceId, sourceSpec);
@@ -165,13 +172,15 @@ export function useCreateGeoJsonSource({
    * @param newData - New GeoJSON data to set
    */
   function setData(newData: GeoJSONSourceSpecification['data']): void {
+    if (!newData) return;
+
+    currentData = newData;
+
     const map = mapInstance.value;
 
     if (!map) return;
 
     if (!source.value || !hasSource(map, sourceId)) return;
-
-    if (!newData) return;
 
     try {
       source.value.setData(newData);
@@ -181,11 +190,10 @@ export function useCreateGeoJsonSource({
   }
 
   /**
-   * Removes the GeoJSON source with enhanced cleanup and error handling
+   * Removes the source from a specific map. When the map ref is swapped the
+   * source is still on the outgoing map, which the ref no longer points at.
    */
-  function removeSource(): void {
-    const map = mapInstance.value;
-
+  function removeSourceFrom(map: Nullable<Map>): void {
     if (!map) return;
 
     try {
@@ -202,6 +210,13 @@ export function useCreateGeoJsonSource({
   }
 
   /**
+   * Removes the GeoJSON source with enhanced cleanup and error handling
+   */
+  function removeSource(): void {
+    removeSourceFrom(mapInstance.value);
+  }
+
+  /**
    * Refreshes the source by removing and recreating it
    */
   function refreshSource(): void {
@@ -211,10 +226,11 @@ export function useCreateGeoJsonSource({
 
   onMounted(async () => {
     await nextTick();
-    initSource();
+    if (!isDisposed) initSource();
   });
 
   onUnmounted(() => {
+    isDisposed = true;
     removeSource();
   });
 
@@ -224,7 +240,7 @@ export function useCreateGeoJsonSource({
     setData,
     removeSource,
     refreshSource,
-    sourceStatus: sourceStatus.value as Readonly<SourceStatus>,
-    isSourceReady: isSourceReady.value,
+    sourceStatus: sourceStatusComputed,
+    isSourceReady,
   };
 }

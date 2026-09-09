@@ -6,28 +6,32 @@ import {
   unref,
   watch,
   nextTick,
-  onBeforeMount,
   onUnmounted,
   watchEffect,
   shallowRef,
 } from 'vue';
-import { MapProvideKey, MapCreationStatus, MapTilerEvents } from '@libs/enums';
+import { MapProvideKey, MapTilerEvents, MapCreationStatus } from '@libs/enums';
+import type { MapTilerEvent } from '@libs/enums';
 import {
+  useCreateMapTiler,
   useMapEventListener,
   useLogger,
-  useOptimizedComputed,
-  useCreateMapTiler,
 } from '@libs/composables';
 import type { CreateMapTilerActions, MapTilerActions } from '@libs/types';
 import type {
+  ErrorEvent,
   Map,
   MapContextEvent,
   MapDataEvent,
   MapEventType,
+  MapLibreEvent as MapTilerGLEvent,
   MapLibreZoomEvent as MapTilerZoomEvent,
   MapMouseEvent,
   MapOptions,
   MapSourceDataEvent,
+  MapStyleDataEvent,
+  MapStyleImageMissingEvent,
+  MapTerrainEvent,
   MapTouchEvent,
   MapWheelEvent,
 } from '@maptiler/sdk';
@@ -48,30 +52,49 @@ interface MapTilerProps {
   containerId?: string;
   /** Custom container class names */
   containerClass?: string;
-  /** Error handling callback */
-  onError?: (error: any) => void;
-  /** Load success callback */
-  onLoad?: (map: Map) => void;
+  /**
+   * Error handling callback.
+   *
+   * Not `onError`: this component also emits `error`, and Vue puts an emit's
+   * handler on `$props` under that same `onError` key. Two declarations of one
+   * prop are intersected, so both the prop and the emit became impossible to
+   * satisfy -- no function is assignable to
+   * `((error: any) => void) & ((ev: ErrorEvent) => any)`.
+   */
+  onMapError?: (error: any) => void;
+  /** Load success callback. Named for the same reason as `onMapError`. */
+  onMapLoad?: (map: Map) => void;
 }
 
+/**
+ * What this component emits.
+ *
+ * One signature per group of forwarded events, covering exactly the names in
+ * `MapTilerEvents` -- the list the runtime attaches listeners for -- with
+ * maptiler's own payload type for each. The version this replaced was wrong in
+ * both directions: it declared `Event`, the DOM one, where the SDK delivers
+ * `MapTilerGLEvent`, so `@move="(e) => e.target"` did not type-check for anyone
+ * using it; and a catch-all `(e: keyof MapEventType, ev: any)` overload
+ * advertised three events the component never forwards.
+ *
+ * The events stay grouped by payload rather than listed one per line because
+ * `vue-tsc` gives up and emits `any` for both the emits and the props of a
+ * component with this many separate overloads -- which would leave the whole
+ * component unchecked.
+ */
 interface Emits {
-  (e: keyof MapEventType, ev: any): void;
-  (e: 'register', actions: MapTilerActions): void;
+  (e: 'error', ev: ErrorEvent): void;
   (
-    e: 'error' | 'load' | 'idle' | 'remove' | 'render' | 'resize',
-    ev: Event,
+    e: 'load' | 'idle' | 'remove' | 'render' | 'resize',
+    ev: MapTilerGLEvent,
   ): void;
   (e: 'webglcontextlost' | 'webglcontextrestored', ev: MapContextEvent): void;
-  (
-    e: 'dataloading' | 'data' | 'tiledataloading' | 'dataabort',
-    ev: MapDataEvent,
-  ): void;
-  (
-    e: 'sourcedataloading' | 'sourcedata' | 'sourcedataabort',
-    ev: MapSourceDataEvent,
-  ): void;
-  (e: 'styledata', ev: Event): void;
-  (e: 'styleimagemissing', ev: Event): void;
+  (e: 'dataloading' | 'data' | 'tiledataloading', ev: MapDataEvent): void;
+  (e: 'sourcedataloading' | 'sourcedata', ev: MapSourceDataEvent): void;
+  (e: 'styledata', ev: MapStyleDataEvent): void;
+  (e: 'styleimagemissing', ev: MapStyleImageMissingEvent): void;
+  (e: 'dataabort', ev: MapDataEvent): void;
+  (e: 'sourcedataabort', ev: MapSourceDataEvent): void;
   (
     e: 'boxzoomcancel' | 'boxzoomstart' | 'boxzoomend',
     ev: MapTilerZoomEvent,
@@ -93,13 +116,11 @@ interface Emits {
     ev: MapMouseEvent,
   ): void;
   (
+    e: 'movestart' | 'move' | 'moveend' | 'zoomstart' | 'zoom' | 'zoomend',
+    ev: MapTilerGLEvent<MouseEvent | TouchEvent | WheelEvent | undefined>,
+  ): void;
+  (
     e:
-      | 'movestart'
-      | 'move'
-      | 'moveend'
-      | 'zoomstart'
-      | 'zoom'
-      | 'zoomend'
       | 'rotatestart'
       | 'rotate'
       | 'rotateend'
@@ -109,16 +130,24 @@ interface Emits {
       | 'pitchstart'
       | 'pitch'
       | 'pitchend',
-    ev: Event,
+    ev: MapTilerGLEvent<MouseEvent | TouchEvent | undefined>,
   ): void;
   (e: 'wheel', ev: MapWheelEvent): void;
-  (e: 'terrain', ev: Event): void;
+  (e: 'terrain', ev: MapTerrainEvent): void;
+  (e: 'register', actions: MapTilerActions): void;
 }
 
 const props = withDefaults(defineProps<MapTilerProps>(), {
   options: () => ({
     // Provide sensible defaults for better performance
-    style: 'YOUR_STYLE',
+    //
+    // A keyless style on purpose. Every MapTiler Cloud style (`"streets-v2"`,
+    // `maptiler://…`, or an api.maptiler.com URL) needs an API key, so
+    // defaulting to one would make `<MapTiler />` render nothing until the
+    // consumer signed up. The SDK passes any http(s) style URL through
+    // untouched, so this demo style works with no account at all. Set
+    // `config.apiKey` and pass a `style` to use MapTiler Cloud instead.
+    style: 'https://demotiles.maplibre.org/style.json',
     center: [0, 0] as [number, number],
     zoom: 1,
     pitch: 0,
@@ -142,11 +171,28 @@ const props = withDefaults(defineProps<MapTilerProps>(), {
 });
 const emits = defineEmits<Emits>();
 
+/**
+ * `emits` under one signature covering every forwarded event, so the loop below
+ * can call it with a name it only knows as the whole union.
+ *
+ * The assignment is also what keeps `Emits` honest. Its payload types have to
+ * be written out, and a transcript drifts; TypeScript checks parameters
+ * contravariantly here, so a signature declaring anything maptiler's own
+ * `MapEventType` does not deliver fails on this line.
+ */
+const forward: <K extends MapTilerEvent>(
+  event: K,
+  payload: MapEventType[K],
+) => void = emits;
+
 // Enhanced logging and error handling
 const { logError } = useLogger(props.debug);
 
-// Reactive state management
-const innerOptions = ref<Partial<MapOptions>>();
+// Only the keys overridden through `setMapOptions`. Merged over `props.options`
+// so a prop that was never overridden keeps flowing through. Shallow, so an
+// object `style` keeps its identity — the style watcher compares by reference,
+// and a proxy wrapper would re-issue `map.setStyle` for an unchanged style.
+const innerOptions = shallowRef<Partial<MapOptions>>({});
 const mapContainerRef = shallowRef<HTMLElement | null>(null);
 const styleRef = ref(props.options.style as string);
 
@@ -156,16 +202,43 @@ const mapCreationStatus = ref<MapCreationStatus>(
 );
 
 // Enhanced computed properties for better reactivity and performance
-const mapOptions = useOptimizedComputed(
-  () => {
-    const baseOptions = { ...props.options };
-    const mergedOptions = { ...baseOptions, ...innerOptions.value };
-    return mergedOptions;
-  },
-  {
-    deepEqual: true, // Use deep equality for complex objects
-  },
-);
+const mapOptions = computed(() => ({
+  ...props.options,
+  ...innerOptions.value,
+}));
+
+/**
+ * Structural comparison for the coordinate-shaped option values (`center`,
+ * `maxBounds`), so a parent re-render that rebuilds an inline `options` literal
+ * does not re-issue the matching map command with an unchanged value.
+ *
+ * The recursion is unbounded, so this is only applied to the coordinate options
+ * — a handful of numbers each. `style` is deliberately left on reference
+ * equality; deep-walking a full style specification on every render is exactly
+ * the cost this component was changed to stop paying.
+ */
+function isSameCoordinateValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (
+    typeof a !== 'object' ||
+    typeof b !== 'object' ||
+    a === null ||
+    b === null
+  ) {
+    return false;
+  }
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every((key) =>
+    isSameCoordinateValue(
+      (a as Record<string, unknown>)[key],
+      (b as Record<string, unknown>)[key],
+    ),
+  );
+}
 
 const isMapReady = computed(
   () => mapCreationStatus.value === MapCreationStatus.Loaded,
@@ -178,18 +251,11 @@ const hasMapError = computed(
 );
 
 /**
- * Enhanced map options setter with validation and error handling
+ * Overrides individual map options on top of the `options` prop
  * @param options - Partial map options to merge
  */
 function setMapOptions(options: Partial<MapOptions>): void {
-  try {
-    innerOptions.value = {
-      ...(unref(mapOptions) || {}),
-      ...options,
-    };
-  } catch (error) {
-    logError('Error setting map options:', error, { options });
-  }
+  innerOptions.value = { ...innerOptions.value, ...options };
 }
 
 // Enhanced map creation with comprehensive error handling and performance monitoring
@@ -211,36 +277,41 @@ const {
   ...unref(mapOptions),
   register: (actions: CreateMapTilerActions) => {
     try {
+      // Status comes from `useCreateMapTiler` alone. The component keeps its
+      // own copy for the template, but it never reaches `Loading`, so mixing
+      // the two sources in one payload gave consumers contradictory values.
       const enhancedActions = {
         ...actions,
         setMapOptions,
-        // Additional enhanced methods
-        isMapReady: isMapReady.value,
-        isMapLoading: isMapLoading.value,
-        hasMapError: hasMapError.value,
       };
 
       props.register?.(enhancedActions as MapTilerActions);
       emits('register', enhancedActions as MapTilerActions);
     } catch (error) {
       logError('Error during map registration:', error);
-      props.onError?.(error);
+      props.onMapError?.(error);
     }
   },
   onLoad: (map) => {
     try {
       mapCreationStatus.value = MapCreationStatus.Loaded;
-      props.onLoad?.(map);
+      props.onMapLoad?.(map);
     } catch (error) {
       logError('Error in map load handler:', error);
-      props.onError?.(error);
+      props.onMapError?.(error);
     }
   },
   onError: (error) => {
     try {
-      mapCreationStatus.value = MapCreationStatus.Error;
-      logError('Map creation error:', error);
-      props.onError?.(error);
+      // A loaded map reports failed tiles, glyphs and sprites through the same
+      // callback. Those must reach the consumer but must not flip the template
+      // gate — `load` never fires again, so the default slot (and every layer,
+      // marker and popup inside it) would be gone for good.
+      if (!isMapReady.value) {
+        mapCreationStatus.value = MapCreationStatus.Error;
+      }
+      logError('Map error:', error);
+      props.onMapError?.(error);
     } catch (handlerError) {
       logError('Error in error handler:', handlerError);
     }
@@ -251,27 +322,29 @@ const {
 // Provide map instance to child components
 provide(MapProvideKey, mapInstance);
 
-// Enhanced event listeners with error handling and performance monitoring
-MapTilerEvents.map((evt) => {
-  return useMapEventListener({
+// Enhanced event listeners with error handling — capture cleanup functions for defense-in-depth
+const eventCleanups = MapTilerEvents.map((evt) => {
+  const { removeListener } = useMapEventListener({
     map: mapInstance,
     event: evt,
     on: (data) => {
       try {
-        emits(evt as keyof MapEventType, data);
+        forward(evt, data);
       } catch (error) {
         logError(`Error in ${evt} event handler:`, error, { data });
       }
     },
     debug: props.debug,
   });
+  return removeListener;
 });
 
 // Create optimized watchers for map properties with null safety
 const watchers = [
   watch(
     () => unref(mapOptions).center,
-    (value) => value && setCenter(value),
+    (value, oldValue) =>
+      value && !isSameCoordinateValue(value, oldValue) && setCenter(value),
     { flush: 'post' },
   ),
   watch(
@@ -296,7 +369,8 @@ const watchers = [
   ),
   watch(
     () => unref(mapOptions).maxBounds,
-    (value) => value && setMaxBounds(value),
+    (value, oldValue) =>
+      value && !isSameCoordinateValue(value, oldValue) && setMaxBounds(value),
     { flush: 'post' },
   ),
   watch(
@@ -341,7 +415,7 @@ watchEffect(async () => {
   } catch (error) {
     logError('Error in container creation watchEffect:', error);
     mapCreationStatus.value = MapCreationStatus.Error;
-    props.onError?.(error);
+    props.onMapError?.(error);
   }
 });
 
@@ -351,6 +425,9 @@ function cleanup(): void {
     // Stop all watchers
     watchers.forEach((stopWatcher) => stopWatcher?.());
 
+    // Explicitly remove event listeners (defense-in-depth alongside onUnmounted in factory)
+    eventCleanups.forEach((cleanup) => cleanup?.());
+
     // Reset state
     isComponentMounted.value = false;
     mapCreationStatus.value = MapCreationStatus.Destroyed;
@@ -358,12 +435,6 @@ function cleanup(): void {
     logError('Error during cleanup:', error);
   }
 }
-
-onBeforeMount(() => {
-  if (props.autoCleanup) {
-    cleanup();
-  }
-});
 
 onUnmounted(() => {
   if (props.autoCleanup) {

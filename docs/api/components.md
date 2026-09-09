@@ -1,56 +1,78 @@
 # Components API Reference
 
-Vue3 MapTiler GL provides a comprehensive set of Vue 3 components for building interactive maps with MapTiler GL JS. All components are designed with TypeScript support, reactive data binding, and comprehensive error handling.
+Vue3 MapTiler SDK provides a comprehensive set of Vue 3 components for building interactive maps with MapTiler SDK. All components are designed with TypeScript support, reactive data binding, and comprehensive error handling.
 
 ## MapTiler
 
-The main map component that renders the MapTiler GL JS map. This is the core component that provides the map container and manages the MapTiler GL instance.
+The main map component that renders the MapTiler SDK map. This is the core component that provides the map container and manages the MapTiler SDK instance.
 
 ### Props
 
-| Prop             | Type                                 | Default      | Description                                |
-| ---------------- | ------------------------------------ | ------------ | ------------------------------------------ |
-| `options`        | `Partial<MapOptions>`                | `{}`         | Map configuration options from MapTiler GL |
-| `register`       | `(actions: MapTilerActions) => void` | `undefined`  | Callback for registering map actions       |
-| `debug`          | `boolean`                            | `false`      | Enable debug logging                       |
-| `autoCleanup`    | `boolean`                            | `true`       | Automatically cleanup resources on unmount |
-| `containerId`    | `string`                             | `'maptiler'` | Container ID for the map element           |
-| `containerClass` | `string`                             | `''`         | Custom container class names               |
-| `onError`        | `(error: any) => void`               | `undefined`  | Error handling callback                    |
-| `onLoad`         | `(map: Map) => void`                 | `undefined`  | Load success callback                      |
+| Prop             | Type                                 | Default     | Description                                                                                        |
+| ---------------- | ------------------------------------ | ----------- | -------------------------------------------------------------------------------------------------- |
+| `options`        | `Partial<MapOptions>`                | see below   | Map configuration options from MapTiler SDK                                                        |
+| `register`       | `(actions: MapTilerActions) => void` | `undefined` | Callback for registering map actions                                                               |
+| `debug`          | `boolean`                            | `false`     | Enable debug logging                                                                               |
+| `autoCleanup`    | `boolean`                            | `true`      | Automatically cleanup resources on unmount                                                         |
+| `containerId`    | `string`                             | random      | Container id, generated per instance as `maptiler-<random>`, so two maps on one page never collide |
+| `containerClass` | `string`                             | `''`        | Custom container class names                                                                       |
+| `onMapError`     | `(error: any) => void`               | `undefined` | Error handling callback. Not `onError`, which is the `error` emit's handler key                    |
+| `onMapLoad`      | `(map: Map) => void`                 | `undefined` | Load success callback. Not `onLoad`, which is the `load` emit's handler key                        |
 
 ### Events
 
-| Event         | Payload           | Description                             |
-| ------------- | ----------------- | --------------------------------------- |
-| `register`    | `MapTilerActions` | Fired when map actions are registered   |
-| `load`        | `MapTilerEvent`   | Fired when the map has finished loading |
-| `error`       | `ErrorEvent`      | Fired when an error occurs              |
-| `click`       | `MapMouseEvent`   | Fired when the map is clicked           |
-| `dblclick`    | `MapMouseEvent`   | Fired when the map is double-clicked    |
-| `contextmenu` | `MapMouseEvent`   | Fired when right-clicking the map       |
-| `mousemove`   | `MapMouseEvent`   | Fired when mouse moves over the map     |
-| `mouseup`     | `MapMouseEvent`   | Fired when mouse button is released     |
-| `mousedown`   | `MapMouseEvent`   | Fired when mouse button is pressed      |
-| `mouseout`    | `MapMouseEvent`   | Fired when mouse leaves the map         |
-| `mouseover`   | `MapMouseEvent`   | Fired when mouse enters the map         |
-| `movestart`   | `MapTilerEvent`   | Fired when map movement starts          |
-| `move`        | `MapTilerEvent`   | Fired during map movement               |
-| `moveend`     | `MapTilerEvent`   | Fired when map movement ends            |
-| `zoomstart`   | `MapTilerEvent`   | Fired when zoom starts                  |
-| `zoom`        | `MapTilerEvent`   | Fired during zoom                       |
-| `zoomend`     | `MapTilerEvent`   | Fired when zoom ends                    |
-| `rotatestart` | `MapTilerEvent`   | Fired when rotation starts              |
-| `rotate`      | `MapTilerEvent`   | Fired during rotation                   |
-| `rotateend`   | `MapTilerEvent`   | Fired when rotation ends                |
-| `dragstart`   | `MapTilerEvent`   | Fired when dragging starts              |
-| `drag`        | `MapTilerEvent`   | Fired during dragging                   |
-| `dragend`     | `MapTilerEvent`   | Fired when dragging ends                |
-| `pitchstart`  | `MapTilerEvent`   | Fired when pitch starts                 |
-| `pitch`       | `MapTilerEvent`   | Fired during pitch                      |
-| `pitchend`    | `MapTilerEvent`   | Fired when pitch ends                   |
-| `wheel`       | `MapWheelEvent`   | Fired on mouse wheel events             |
-| `terrain`     | `MapTerrainEvent` | Fired on terrain events                 |
+| Event                  | Payload                                                                | Description                                          |
+| ---------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------- |
+| `register`             | `MapTilerActions`                                                      | Fired when map actions are registered                |
+| `load`                 | `MapTilerGLEvent`                                                      | Fired when the map has finished loading              |
+| `error`                | `ErrorEvent`                                                           | Fired when an error occurs                           |
+| `click`                | `MapMouseEvent`                                                        | Fired when the map is clicked                        |
+| `dblclick`             | `MapMouseEvent`                                                        | Fired when the map is double-clicked                 |
+| `contextmenu`          | `MapMouseEvent`                                                        | Fired when right-clicking the map                    |
+| `mousemove`            | `MapMouseEvent`                                                        | Fired when mouse moves over the map                  |
+| `mouseup`              | `MapMouseEvent`                                                        | Fired when mouse button is released                  |
+| `mousedown`            | `MapMouseEvent`                                                        | Fired when mouse button is pressed                   |
+| `mouseout`             | `MapMouseEvent`                                                        | Fired when mouse leaves the map                      |
+| `mouseover`            | `MapMouseEvent`                                                        | Fired when mouse enters the map                      |
+| `movestart`            | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired when map movement starts                       |
+| `move`                 | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired during map movement                            |
+| `moveend`              | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired when map movement ends                         |
+| `zoomstart`            | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired when zoom starts                               |
+| `zoom`                 | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired during zoom                                    |
+| `zoomend`              | `MapTilerGLEvent<MouseEvent \| TouchEvent \| WheelEvent \| undefined>` | Fired when zoom ends                                 |
+| `rotatestart`          | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when rotation starts                           |
+| `rotate`               | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired during rotation                                |
+| `rotateend`            | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when rotation ends                             |
+| `dragstart`            | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when dragging starts                           |
+| `drag`                 | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired during dragging                                |
+| `dragend`              | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when dragging ends                             |
+| `pitchstart`           | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when pitch starts                              |
+| `pitch`                | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired during pitch                                   |
+| `pitchend`             | `MapTilerGLEvent<MouseEvent \| TouchEvent \| undefined>`               | Fired when pitch ends                                |
+| `wheel`                | `MapWheelEvent`                                                        | Fired on mouse wheel events                          |
+| `terrain`              | `MapTerrainEvent`                                                      | Fired on terrain events                              |
+| `touchstart`           | `MapTouchEvent`                                                        | Fired when a touch begins                            |
+| `touchmove`            | `MapTouchEvent`                                                        | Fired as a touch moves                               |
+| `touchend`             | `MapTouchEvent`                                                        | Fired when a touch ends                              |
+| `touchcancel`          | `MapTouchEvent`                                                        | Fired when a touch is interrupted                    |
+| `boxzoomstart`         | `MapTilerZoomEvent`                                                    | Fired when a box zoom begins                         |
+| `boxzoomend`           | `MapTilerZoomEvent`                                                    | Fired when a box zoom completes                      |
+| `boxzoomcancel`        | `MapTilerZoomEvent`                                                    | Fired when a box zoom is cancelled                   |
+| `idle`                 | `MapTilerGLEvent`                                                      | Fired when the map stops rendering                   |
+| `render`               | `MapTilerGLEvent`                                                      | Fired on every frame the map draws                   |
+| `resize`               | `MapTilerGLEvent`                                                      | Fired when the map container resizes                 |
+| `remove`               | `MapTilerGLEvent`                                                      | Fired when the map is destroyed                      |
+| `data`                 | `MapDataEvent`                                                         | Fired when any map data loads or changes             |
+| `dataloading`          | `MapDataEvent`                                                         | Fired when data begins loading                       |
+| `dataabort`            | `MapDataEvent`                                                         | Fired when a data request is aborted                 |
+| `tiledataloading`      | `MapDataEvent`                                                         | Fired when a tile begins loading                     |
+| `sourcedata`           | `MapSourceDataEvent`                                                   | Fired when source data loads or changes              |
+| `sourcedataloading`    | `MapSourceDataEvent`                                                   | Fired when source data begins loading                |
+| `sourcedataabort`      | `MapSourceDataEvent`                                                   | Fired when a source request is aborted               |
+| `styledata`            | `MapStyleDataEvent`                                                    | Fired when the style loads or changes                |
+| `styleimagemissing`    | `MapStyleImageMissingEvent`                                            | Fired when the style needs an image it does not have |
+| `webglcontextlost`     | `MapContextEvent`                                                      | Fired when the WebGL context is lost                 |
+| `webglcontextrestored` | `MapContextEvent`                                                      | Fired when the WebGL context is restored             |
 
 ### Slots
 
@@ -91,7 +113,7 @@ import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, FillLayer } from 'vue3-maptiler-gl';
 
 const mapOptions = ref({
-  style: 'YOUR_STYLE',
+  style: 'https://demotiles.maplibre.org/style.json',
   center: [0, 0],
   zoom: 2,
 });
@@ -122,17 +144,18 @@ A component for adding GeoJSON data sources to the map. This component provides 
 
 ### Props
 
-| Prop           | Type                                                 | Default                                       | Description                                |
-| -------------- | ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------ |
-| `id`           | `string`                                             | `undefined`                                   | Unique identifier for the source           |
-| `data`         | `GeoJSONSourceSpecification['data']`                 | `{ type: 'FeatureCollection', features: [] }` | GeoJSON data or URL to GeoJSON             |
-| `options`      | `Partial<GeoJSONSourceSpecification>`                | `{}`                                          | Additional GeoJSON source options          |
-| `debug`        | `boolean`                                            | `false`                                       | Enable debug logging                       |
-| `autoCleanup`  | `boolean`                                            | `true`                                        | Automatically cleanup resources on unmount |
-| `register`     | `(actions: CreateGeoJsonSourceActions) => void`      | `undefined`                                   | Callback for registering source actions    |
-| `onLoad`       | `(source: any) => void`                              | `undefined`                                   | Load success callback                      |
-| `onError`      | `(error: any) => void`                               | `undefined`                                   | Error handling callback                    |
-| `onDataUpdate` | `(data: GeoJSONSourceSpecification['data']) => void` | `undefined`                                   | Data update callback                       |
+| Prop            | Type                                                 | Default                                       | Description                                                                     |
+| --------------- | ---------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `id`            | `string`                                             | `undefined`                                   | Unique identifier for the source                                                |
+| `data`          | `GeoJSONSourceSpecification['data']`                 | `{ type: 'FeatureCollection', features: [] }` | GeoJSON data or URL to GeoJSON                                                  |
+| `options`       | `Partial<GeoJSONSourceSpecification>`                | `{}`                                          | Additional GeoJSON source options                                               |
+| `debug`         | `boolean`                                            | `false`                                       | Enable debug logging                                                            |
+| `autoCleanup`   | `boolean`                                            | `true`                                        | Automatically cleanup resources on unmount                                      |
+| `register`      | `(actions: CreateGeoJsonSourceActions) => void`      | `undefined`                                   | Callback for registering source actions                                         |
+| `onSourceLoad`  | `(source: GeoJSONSource) => void`                    | `undefined`                                   | Load success callback. Not `onLoad`, which is the `load` emit's handler key     |
+| `onSourceError` | `(error: any) => void`                               | `undefined`                                   | Error handling callback. Not `onError`, which is the `error` emit's handler key |
+| `debounceDelay` | `number`                                             | `100`                                         | Delay in ms before a `data` change is pushed to the source                      |
+| `onDataUpdate`  | `(data: GeoJSONSourceSpecification['data']) => void` | `undefined`                                   | Data update callback                                                            |
 
 ### Events
 
@@ -148,13 +171,7 @@ A component for adding GeoJSON data sources to the map. This component provides 
 ```vue
 <template>
   <MapTiler :options="mapOptions">
-    <GeoJsonSource
-      id="my-source"
-      :data="geoJsonData"
-      :cluster="true"
-      :cluster-max-zoom="14"
-      :cluster-radius="50"
-    >
+    <GeoJsonSource id="my-source" :data="geoJsonData" :options="clusterOptions">
       <CircleLayer :style="circleStyle" />
     </GeoJsonSource>
   </MapTiler>
@@ -163,6 +180,20 @@ A component for adding GeoJSON data sources to the map. This component provides 
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, CircleLayer } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+// Clustering is source configuration, so it goes in `options` rather than in
+// props of its own.
+const clusterOptions = ref({
+  cluster: true,
+  clusterMaxZoom: 14,
+  clusterRadius: 50,
+});
 
 const geoJsonData = ref({
   type: 'FeatureCollection',
@@ -189,41 +220,42 @@ const circleStyle = ref({
 
 ## FillLayer
 
-A component for rendering filled polygons from a data source. Supports all MapTiler GL fill layer properties with reactive updates and comprehensive event handling.
+A component for rendering filled polygons from a data source. Supports all MapTiler SDK fill layer properties with reactive updates and comprehensive event handling.
 
 ### Props
 
-| Prop          | Type                  | Default     | Description                                   |
-| ------------- | --------------------- | ----------- | --------------------------------------------- |
-| `id`          | `string`              | `undefined` | Unique identifier for the layer               |
-| `source`      | `string \| object`    | `undefined` | Data source for the layer                     |
-| `sourceLayer` | `string`              | `undefined` | Source layer name for vector sources          |
-| `filter`      | `FilterSpecification` | `['all']`   | Filter expression to apply to the layer       |
-| `style`       | `FillLayerStyle`      | `{}`        | Style configuration for the fill layer        |
-| `maxzoom`     | `number`              | `24`        | Maximum zoom level for layer visibility       |
-| `minzoom`     | `number`              | `0`         | Minimum zoom level for layer visibility       |
-| `metadata`    | `object`              | `undefined` | Arbitrary metadata for the layer              |
-| `beforeId`    | `string`              | `undefined` | ID of layer before which to insert this layer |
-| `visible`     | `boolean`             | `true`      | Whether the layer is visible                  |
+| Prop          | Type                                                                      | Default     | Description                                                                               |
+| ------------- | ------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `id`          | `string`                                                                  | `undefined` | Unique identifier for the layer                                                           |
+| `source`      | `string \| object`                                                        | `undefined` | Data source for the layer                                                                 |
+| `sourceLayer` | `string`                                                                  | `undefined` | Source layer name for vector sources                                                      |
+| `filter`      | `FilterSpecification`                                                     | `undefined` | Filter expression to apply to the layer; the layer is created with `['all']` when omitted |
+| `style`       | `FillLayerStyle`                                                          | `undefined` | Style configuration for the fill layer; an omitted style contributes nothing              |
+| `maxzoom`     | `number`                                                                  | `undefined` | Maximum zoom level for layer visibility; the layer is created with `24` when omitted      |
+| `minzoom`     | `number`                                                                  | `undefined` | Minimum zoom level for layer visibility; the layer is created with `0` when omitted       |
+| `metadata`    | `object`                                                                  | `undefined` | Arbitrary metadata for the layer                                                          |
+| `beforeId`    | `string`                                                                  | `undefined` | ID of layer before which to insert this layer                                             |
+| `visible`     | `boolean`                                                                 | `true`      | Whether the layer is visible                                                              |
+| `register`    | `(actions: CreateLayerActions<FillLayerSpecification>, map: Map) => void` | `undefined` | Callback receiving the layer's actions once it exists                                     |
 
 ### Events
 
-| Event         | Payload              | Description                                  |
-| ------------- | -------------------- | -------------------------------------------- |
-| `register`    | `CreateLayerActions` | Fired when layer is registered               |
-| `click`       | `MapLayerMouseEvent` | Fired when layer is clicked                  |
-| `dblclick`    | `MapLayerMouseEvent` | Fired when layer is double-clicked           |
-| `mousedown`   | `MapLayerMouseEvent` | Fired when mouse button is pressed on layer  |
-| `mouseup`     | `MapLayerMouseEvent` | Fired when mouse button is released on layer |
-| `mousemove`   | `MapLayerMouseEvent` | Fired when mouse moves over layer            |
-| `mouseenter`  | `MapLayerMouseEvent` | Fired when mouse enters layer                |
-| `mouseleave`  | `MapLayerMouseEvent` | Fired when mouse leaves layer                |
-| `mouseover`   | `MapLayerMouseEvent` | Fired when mouse is over layer               |
-| `mouseout`    | `MapLayerMouseEvent` | Fired when mouse leaves layer                |
-| `contextmenu` | `MapLayerMouseEvent` | Fired when right-clicking layer              |
-| `touchstart`  | `MapLayerTouchEvent` | Fired when touch starts on layer             |
-| `touchend`    | `MapLayerTouchEvent` | Fired when touch ends on layer               |
-| `touchcancel` | `MapLayerTouchEvent` | Fired when touch is cancelled on layer       |
+| Event         | Payload                                      | Description                                  |
+| ------------- | -------------------------------------------- | -------------------------------------------- |
+| `register`    | `CreateLayerActions<FillLayerSpecification>` | Fired when layer is registered               |
+| `click`       | `MapLayerMouseEvent`                         | Fired when layer is clicked                  |
+| `dblclick`    | `MapLayerMouseEvent`                         | Fired when layer is double-clicked           |
+| `mousedown`   | `MapLayerMouseEvent`                         | Fired when mouse button is pressed on layer  |
+| `mouseup`     | `MapLayerMouseEvent`                         | Fired when mouse button is released on layer |
+| `mousemove`   | `MapLayerMouseEvent`                         | Fired when mouse moves over layer            |
+| `mouseenter`  | `MapLayerMouseEvent`                         | Fired when mouse enters layer                |
+| `mouseleave`  | `MapLayerMouseEvent`                         | Fired when mouse leaves layer                |
+| `mouseover`   | `MapLayerMouseEvent`                         | Fired when mouse is over layer               |
+| `mouseout`    | `MapLayerMouseEvent`                         | Fired when mouse leaves layer                |
+| `contextmenu` | `MapLayerMouseEvent`                         | Fired when right-clicking layer              |
+| `touchstart`  | `MapLayerTouchEvent`                         | Fired when touch starts on layer             |
+| `touchend`    | `MapLayerTouchEvent`                         | Fired when touch ends on layer               |
+| `touchcancel` | `MapLayerTouchEvent`                         | Fired when touch is cancelled on layer       |
 
 ### Example
 
@@ -244,6 +276,17 @@ A component for rendering filled polygons from a data source. Supports all MapTi
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, FillLayer } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const polygonData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
 
 const fillStyle = ref({
   'fill-color': [
@@ -267,22 +310,26 @@ A component for rendering circles from point data sources. Perfect for displayin
 
 ### Props
 
-| Prop          | Type                  | Default     | Description                                   |
-| ------------- | --------------------- | ----------- | --------------------------------------------- |
-| `id`          | `string`              | `undefined` | Unique identifier for the layer               |
-| `source`      | `string \| object`    | `undefined` | Data source for the layer                     |
-| `sourceLayer` | `string`              | `undefined` | Source layer name for vector sources          |
-| `filter`      | `FilterSpecification` | `['all']`   | Filter expression to apply to the layer       |
-| `style`       | `CircleLayerStyle`    | `{}`        | Style configuration for the circle layer      |
-| `maxzoom`     | `number`              | `24`        | Maximum zoom level for layer visibility       |
-| `minzoom`     | `number`              | `0`         | Minimum zoom level for layer visibility       |
-| `metadata`    | `object`              | `undefined` | Arbitrary metadata for the layer              |
-| `beforeId`    | `string`              | `undefined` | ID of layer before which to insert this layer |
-| `visible`     | `boolean`             | `true`      | Whether the layer is visible                  |
+| Prop          | Type                                                                        | Default     | Description                                                                          |
+| ------------- | --------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
+| `id`          | `string`                                                                    | `undefined` | Unique identifier for the layer                                                      |
+| `source`      | `string \| object`                                                          | `undefined` | Data source for the layer                                                            |
+| `sourceLayer` | `string`                                                                    | `undefined` | Source layer name for vector sources                                                 |
+| `filter`      | `FilterSpecification`                                                       | `['all']`   | Filter expression to apply to the layer                                              |
+| `style`       | `CircleLayerStyle`                                                          | `{}`        | Style configuration for the circle layer                                             |
+| `maxzoom`     | `number`                                                                    | `undefined` | Maximum zoom level for layer visibility; the layer is created with `24` when omitted |
+| `minzoom`     | `number`                                                                    | `undefined` | Minimum zoom level for layer visibility; the layer is created with `0` when omitted  |
+| `metadata`    | `object`                                                                    | `undefined` | Arbitrary metadata for the layer                                                     |
+| `beforeId`    | `string`                                                                    | `undefined` | ID of layer before which to insert this layer                                        |
+| `visible`     | `boolean`                                                                   | `true`      | Whether the layer is visible                                                         |
+| `register`    | `(actions: CreateLayerActions<CircleLayerSpecification>, map: Map) => void` | `undefined` | Callback receiving the layer's actions once it exists                                |
+| `debug`       | `boolean`                                                                   | `false`     | Enable debug logging                                                                 |
 
 ### Events
 
 Same events as FillLayer (click, mousemove, etc.)
+
+<!-- events-like: FillLayer -->
 
 ### Example
 
@@ -298,6 +345,17 @@ Same events as FillLayer (click, mousemove, etc.)
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, CircleLayer } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const pointData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
 
 const circleStyle = ref({
   'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 15, 10],
@@ -328,22 +386,25 @@ A component for rendering lines from line data sources. Ideal for displaying rou
 
 ### Props
 
-| Prop          | Type                  | Default     | Description                                   |
-| ------------- | --------------------- | ----------- | --------------------------------------------- |
-| `id`          | `string`              | `undefined` | Unique identifier for the layer               |
-| `source`      | `string \| object`    | `undefined` | Data source for the layer                     |
-| `sourceLayer` | `string`              | `undefined` | Source layer name for vector sources          |
-| `filter`      | `FilterSpecification` | `['all']`   | Filter expression to apply to the layer       |
-| `style`       | `LineLayerStyle`      | `{}`        | Style configuration for the line layer        |
-| `maxzoom`     | `number`              | `24`        | Maximum zoom level for layer visibility       |
-| `minzoom`     | `number`              | `0`         | Minimum zoom level for layer visibility       |
-| `metadata`    | `object`              | `undefined` | Arbitrary metadata for the layer              |
-| `beforeId`    | `string`              | `undefined` | ID of layer before which to insert this layer |
-| `visible`     | `boolean`             | `true`      | Whether the layer is visible                  |
+| Prop          | Type                                                                      | Default     | Description                                                                               |
+| ------------- | ------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `id`          | `string`                                                                  | `undefined` | Unique identifier for the layer                                                           |
+| `source`      | `string \| object`                                                        | `undefined` | Data source for the layer                                                                 |
+| `sourceLayer` | `string`                                                                  | `undefined` | Source layer name for vector sources                                                      |
+| `filter`      | `FilterSpecification`                                                     | `undefined` | Filter expression to apply to the layer; the layer is created with `['all']` when omitted |
+| `style`       | `LineLayerStyle`                                                          | `undefined` | Style configuration for the line layer; an omitted style contributes nothing              |
+| `maxzoom`     | `number`                                                                  | `undefined` | Maximum zoom level for layer visibility; the layer is created with `24` when omitted      |
+| `minzoom`     | `number`                                                                  | `undefined` | Minimum zoom level for layer visibility; the layer is created with `0` when omitted       |
+| `metadata`    | `object`                                                                  | `undefined` | Arbitrary metadata for the layer                                                          |
+| `beforeId`    | `string`                                                                  | `undefined` | ID of layer before which to insert this layer                                             |
+| `visible`     | `boolean`                                                                 | `true`      | Whether the layer is visible                                                              |
+| `register`    | `(actions: CreateLayerActions<LineLayerSpecification>, map: Map) => void` | `undefined` | Callback receiving the layer's actions once it exists                                     |
 
 ### Events
 
 Same events as FillLayer (click, mousemove, etc.)
+
+<!-- events-like: FillLayer -->
 
 ### Example
 
@@ -359,6 +420,17 @@ Same events as FillLayer (click, mousemove, etc.)
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, LineLayer } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const lineData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
 
 const lineStyle = ref({
   'line-color': '#007cbf',
@@ -378,22 +450,25 @@ A component for rendering symbols (icons and text) from point data sources. Perf
 
 ### Props
 
-| Prop          | Type                  | Default     | Description                                   |
-| ------------- | --------------------- | ----------- | --------------------------------------------- |
-| `id`          | `string`              | `undefined` | Unique identifier for the layer               |
-| `source`      | `string \| object`    | `undefined` | Data source for the layer                     |
-| `sourceLayer` | `string`              | `undefined` | Source layer name for vector sources          |
-| `filter`      | `FilterSpecification` | `['all']`   | Filter expression to apply to the layer       |
-| `style`       | `SymbolLayerStyle`    | `{}`        | Style configuration for the symbol layer      |
-| `maxzoom`     | `number`              | `24`        | Maximum zoom level for layer visibility       |
-| `minzoom`     | `number`              | `0`         | Minimum zoom level for layer visibility       |
-| `metadata`    | `object`              | `undefined` | Arbitrary metadata for the layer              |
-| `beforeId`    | `string`              | `undefined` | ID of layer before which to insert this layer |
-| `visible`     | `boolean`             | `true`      | Whether the layer is visible                  |
+| Prop          | Type                                                                        | Default     | Description                                                                               |
+| ------------- | --------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `id`          | `string`                                                                    | `undefined` | Unique identifier for the layer                                                           |
+| `source`      | `string \| object`                                                          | `undefined` | Data source for the layer                                                                 |
+| `sourceLayer` | `string`                                                                    | `undefined` | Source layer name for vector sources                                                      |
+| `filter`      | `FilterSpecification`                                                       | `undefined` | Filter expression to apply to the layer; the layer is created with `['all']` when omitted |
+| `style`       | `SymbolLayerStyle`                                                          | `undefined` | Style configuration for the symbol layer; an omitted style contributes nothing            |
+| `maxzoom`     | `number`                                                                    | `undefined` | Maximum zoom level for layer visibility; the layer is created with `24` when omitted      |
+| `minzoom`     | `number`                                                                    | `undefined` | Minimum zoom level for layer visibility; the layer is created with `0` when omitted       |
+| `metadata`    | `object`                                                                    | `undefined` | Arbitrary metadata for the layer                                                          |
+| `beforeId`    | `string`                                                                    | `undefined` | ID of layer before which to insert this layer                                             |
+| `visible`     | `boolean`                                                                   | `true`      | Whether the layer is visible                                                              |
+| `register`    | `(actions: CreateLayerActions<SymbolLayerSpecification>, map: Map) => void` | `undefined` | Callback receiving the layer's actions once it exists                                     |
 
 ### Events
 
 Same events as FillLayer (click, mousemove, etc.)
+
+<!-- events-like: FillLayer -->
 
 ### Example
 
@@ -409,6 +484,17 @@ Same events as FillLayer (click, mousemove, etc.)
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, GeoJsonSource, SymbolLayer } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const pointData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
 
 const symbolStyle = ref({
   'text-field': ['get', 'name'],
@@ -433,22 +519,22 @@ A component for adding HTML markers to the map. Supports custom HTML content, dr
 
 ### Props
 
-| Prop                | Type            | Default     | Description                            |
-| ------------------- | --------------- | ----------- | -------------------------------------- |
-| `lnglat`            | `LngLatLike`    | `undefined` | Geographic coordinates for the marker  |
-| `popup`             | `Popup`         | `undefined` | Popup to associate with the marker     |
-| `options`           | `MarkerOptions` | `{}`        | Marker configuration options           |
-| `draggable`         | `boolean`       | `false`     | Whether the marker is draggable        |
-| `element`           | `HTMLElement`   | `undefined` | Custom HTML element for the marker     |
-| `offset`            | `PointLike`     | `undefined` | Offset from the marker's position      |
-| `anchor`            | `Anchor`        | `undefined` | Anchor point for the marker            |
-| `color`             | `string`        | `undefined` | Color of the default marker            |
-| `clickTolerance`    | `number`        | `undefined` | Tolerance for click events             |
-| `rotation`          | `number`        | `undefined` | Rotation angle in degrees              |
-| `rotationAlignment` | `Alignment`     | `undefined` | Rotation alignment relative to the map |
-| `pitchAlignment`    | `Alignment`     | `undefined` | Pitch alignment relative to the map    |
-| `scale`             | `number`        | `undefined` | Scale factor for the marker            |
-| `occludedOpacity`   | `number`        | `undefined` | Opacity when marker is occluded        |
+| Prop                | Type            | Default     | Description                                                                                  |
+| ------------------- | --------------- | ----------- | -------------------------------------------------------------------------------------------- |
+| `lnglat`            | `LngLatLike`    | `undefined` | Geographic coordinates for the marker                                                        |
+| `popup`             | `Popup`         | `undefined` | Popup to associate with the marker                                                           |
+| `options`           | `MarkerOptions` | `{}`        | Marker configuration options                                                                 |
+| `draggable`         | `boolean`       | `undefined` | Whether the marker is draggable; omitted leaves the option unset, and MapTiler does not drag |
+| `element`           | `HTMLElement`   | `undefined` | Custom HTML element for the marker                                                           |
+| `offset`            | `PointLike`     | `undefined` | Offset from the marker's position                                                            |
+| `anchor`            | `Anchor`        | `undefined` | Anchor point for the marker                                                                  |
+| `color`             | `string`        | `undefined` | Color of the default marker                                                                  |
+| `clickTolerance`    | `number`        | `undefined` | Tolerance for click events                                                                   |
+| `rotation`          | `number`        | `undefined` | Rotation angle in degrees                                                                    |
+| `rotationAlignment` | `Alignment`     | `undefined` | Rotation alignment relative to the map                                                       |
+| `pitchAlignment`    | `Alignment`     | `undefined` | Pitch alignment relative to the map                                                          |
+| `scale`             | `number`        | `undefined` | Scale factor for the marker                                                                  |
+| `occludedOpacity`   | `number`        | `undefined` | Opacity when marker is occluded                                                              |
 
 ### Events
 
@@ -464,7 +550,7 @@ A component for adding HTML markers to the map. Supports custom HTML content, dr
 <template>
   <MapTiler :options="mapOptions">
     <Marker
-      :lng-lat="markerPosition"
+      :lnglat="markerPosition"
       :draggable="true"
       @dragend="onMarkerDragEnd"
     >
@@ -476,6 +562,12 @@ A component for adding HTML markers to the map. Supports custom HTML content, dr
 <script setup>
 import { ref } from 'vue';
 import { MapTiler, Marker } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
 
 const markerPosition = ref([0, 0]);
 
@@ -493,24 +585,24 @@ function onMarkerDragEnd(event) {
 </style>
 ```
 
-## PopUp
+## Popup
 
 A component for displaying popup windows on the map. Supports custom HTML content, positioning, and comprehensive event handling.
 
 ### Props
 
-| Prop            | Type           | Default     | Description                          |
-| --------------- | -------------- | ----------- | ------------------------------------ |
-| `className`     | `string`       | `undefined` | CSS class name for the popup         |
-| `lnglat`        | `LngLatLike`   | `undefined` | Geographic coordinates for the popup |
-| `show`          | `boolean`      | `true`      | Whether the popup is visible         |
-| `withMap`       | `boolean`      | `true`      | Whether to attach popup to the map   |
-| `options`       | `PopupOptions` | `{}`        | Popup configuration options          |
-| `html`          | `string`       | `undefined` | HTML content for the popup           |
-| `maxWidth`      | `string`       | `undefined` | Maximum width of the popup           |
-| `closeButton`   | `boolean`      | `true`      | Whether to show close button         |
-| `closeOnClick`  | `boolean`      | `true`      | Whether to close on map click        |
-| `closeOnEscape` | `boolean`      | `true`      | Whether to close on escape key       |
+| Prop            | Type           | Default     | Description                                                        |
+| --------------- | -------------- | ----------- | ------------------------------------------------------------------ |
+| `className`     | `string`       | `undefined` | CSS class name for the popup                                       |
+| `lnglat`        | `LngLatLike`   | `undefined` | Geographic coordinates for the popup                               |
+| `show`          | `boolean`      | `true`      | Whether the popup is visible                                       |
+| `withMap`       | `boolean`      | `true`      | Whether to attach popup to the map                                 |
+| `options`       | `PopupOptions` | `undefined` | Popup configuration options; an omitted object contributes nothing |
+| `html`          | `string`       | `undefined` | HTML content for the popup                                         |
+| `maxWidth`      | `string`       | `undefined` | Maximum width of the popup                                         |
+| `closeButton`   | `boolean`      | `true`      | Whether to show close button                                       |
+| `closeOnClick`  | `boolean`      | `true`      | Whether to close on map click                                      |
+| `closeOnEscape` | `boolean`      | `true`      | Whether to close on escape key                                     |
 
 ### Events
 
@@ -525,18 +617,24 @@ A component for displaying popup windows on the map. Supports custom HTML conten
 ```vue
 <template>
   <MapTiler :options="mapOptions">
-    <PopUp :lng-lat="popupPosition" :close-button="true" @close="onPopupClose">
+    <Popup :lnglat="popupPosition" :close-button="true" @close="onPopupClose">
       <div class="popup-content">
         <h3>Hello World!</h3>
         <p>This is a popup at {{ popupPosition }}.</p>
       </div>
-    </PopUp>
+    </Popup>
   </MapTiler>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { MapTiler, PopUp } from 'vue3-maptiler-gl';
+import { MapTiler, Popup } from 'vue3-maptiler-gl';
+
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
 
 const popupPosition = ref([0, 0]);
 
@@ -555,16 +653,23 @@ function onPopupClose() {
 
 ## Image
 
-A component for managing and loading images for use in MapTiler GL styles. Supports multiple image formats and provides loading state management.
+A component for managing and loading images for use in MapTiler SDK styles. Supports multiple image formats and provides loading state management.
 
 ### Props
 
-| Prop          | Type                          | Default | Description                           |
-| ------------- | ----------------------------- | ------- | ------------------------------------- |
-| `images`      | `ImageItem[]`                 | `[]`    | Array of images to load               |
-| `options`     | `Partial<StyleImageMetadata>` | `{}`    | Default options applied to all images |
-| `showLoading` | `boolean`                     | `true`  | Whether to show loading state         |
-| `debug`       | `boolean`                     | `false` | Whether to enable debug logging       |
+| Prop                             | Type                          | Default     | Description                                                                                                                                |
+| -------------------------------- | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `images`                         | `ImageItem[]`                 | `[]`        | Array of images to load                                                                                                                    |
+| `options`                        | `Partial<StyleImageMetadata>` | `undefined` | Default options applied to all images; an omitted object contributes nothing                                                               |
+| `showLoading`                    | `boolean`                     | `true`      | Whether to show loading state                                                                                                              |
+| `forceRecreateOnDimensionChange` | `boolean`                     | `true`      | Remove and re-add an image whose dimensions changed, avoiding MapTiler's "width and height must be the same as the previous version" error |
+| `debug`                          | `boolean`                     | `undefined` | Whether to enable debug logging                                                                                                            |
+
+### Events
+
+| Event   | Payload | Description                       |
+| ------- | ------- | --------------------------------- |
+| `error` | `any`   | Fired when an image fails to load |
 
 ### ImageItem Interface
 
@@ -590,6 +695,17 @@ A component for managing and loading images for use in MapTiler GL styles. Suppo
 import { ref } from 'vue';
 import { MapTiler, Image, GeoJsonSource, SymbolLayer } from 'vue3-maptiler-gl';
 
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
+const pointData = ref({
+  type: 'FeatureCollection',
+  features: [],
+});
+
 const mapImages = ref([
   {
     id: 'custom-marker',
@@ -611,28 +727,32 @@ A component for adding geolocation controls to the map. Provides user location t
 
 ### Props
 
-| Prop               | Type                               | Default     | Description                                      |
-| ------------------ | ---------------------------------- | ----------- | ------------------------------------------------ |
-| `position`         | `ControlPosition`                  | `undefined` | Position of the control on the map               |
-| `options`          | `GeolocateControlOptions`          | `{}`        | Geolocate control configuration options          |
-| `debug`            | `boolean`                          | `false`     | Enable debug logging                             |
-| `autoCleanup`      | `boolean`                          | `true`      | Automatically cleanup resources on unmount       |
-| `onError`          | `(error: any) => void`             | `undefined` | Error handling callback                          |
-| `onGeolocate`      | `(data: GeolocateSuccess) => void` | `undefined` | Success callback for geolocation                 |
-| `onTrackingStart`  | `(data: GeolocateSuccess) => void` | `undefined` | Callback when user location tracking starts      |
-| `onTrackingEnd`    | `(data: GeolocateSuccess) => void` | `undefined` | Callback when user location tracking ends        |
-| `onOutOfMaxBounds` | `(data: GeolocateSuccess) => void` | `undefined` | Callback when user location is out of max bounds |
+| Prop                 | Type                               | Default          | Description                                                                      |
+| -------------------- | ---------------------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `position`           | `ControlPosition`                  | `'bottom-right'` | Position of the control on the map                                               |
+| `options`            | `GeolocateControlOptions`          | `{}`             | Geolocate control configuration options                                          |
+| `debug`              | `boolean`                          | `false`          | Enable debug logging                                                             |
+| `autoCleanup`        | `boolean`                          | `true`           | Automatically cleanup resources on unmount                                       |
+| `onGeolocateError`   | `(error: any) => void`             | `undefined`      | Error handling callback. Not `onError`, which is the `error` emit's handler key  |
+| `onGeolocateSuccess` | `(data: GeolocateSuccess) => void` | `undefined`      | Success callback. Not `onGeolocate`, which is the `geolocate` emit's handler key |
+| `onTrackingStart`    | `(data: GeolocateSuccess) => void` | `undefined`      | Callback when user location tracking starts                                      |
+| `onTrackingEnd`      | `(data: GeolocateSuccess) => void` | `undefined`      | Callback when user location tracking ends                                        |
+| `onOutOfMaxBounds`   | `(data: GeolocateSuccess) => void` | `undefined`      | Callback when user location is out of max bounds                                 |
 
 ### Events
 
-| Event            | Payload                    | Description                              |
-| ---------------- | -------------------------- | ---------------------------------------- |
-| `register`       | `GeolocateControl`         | Fired when control is registered         |
-| `geolocate`      | `GeolocateSuccess`         | Fired when geolocation is successful     |
-| `error`          | `GeolocationPositionError` | Fired when geolocation error occurs      |
-| `trackingstart`  | `GeolocateSuccess`         | Fired when location tracking starts      |
-| `trackingend`    | `GeolocateSuccess`         | Fired when location tracking ends        |
-| `outofmaxbounds` | `GeolocateSuccess`         | Fired when location is out of max bounds |
+| Event                    | Payload                    | Description                              |
+| ------------------------ | -------------------------- | ---------------------------------------- |
+| `register`               | `GeolocateControl`         | Fired when control is registered         |
+| `geolocate`              | `GeolocateSuccess`         | Fired when geolocation is successful     |
+| `error`                  | `GeolocationPositionError` | Fired when geolocation error occurs      |
+| `trackuserlocationstart` | `GeolocateSuccess`         | Fired when location tracking starts      |
+| `trackuserlocationend`   | `GeolocateSuccess`         | Fired when location tracking ends        |
+| `outofmaxbounds`         | `GeolocateSuccess`         | Fired when location is out of max bounds |
+
+The event names are MapTiler's own, so `@trackuserlocationstart` — not
+`@trackingstart`. The `onTrackingStart` / `onTrackingEnd` **props** above keep
+the shorter names.
 
 ### Example
 
@@ -652,12 +772,17 @@ A component for adding geolocation controls to the map. Provides user location t
 import { ref } from 'vue';
 import { MapTiler, GeolocateControls } from 'vue3-maptiler-gl';
 
+const mapOptions = ref({
+  style: 'https://demotiles.maplibre.org/style.json',
+  center: [0, 0],
+  zoom: 2,
+});
+
 const geolocateOptions = ref({
   positionOptions: {
     enableHighAccuracy: true,
   },
   trackUserLocation: true,
-  showUserHeading: true,
 });
 
 function onGeolocate(data) {
