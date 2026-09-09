@@ -48,8 +48,9 @@ export default defineConfig({
       { text: 'API', link: '/api/components' },
       { text: 'Examples', link: '/examples/' },
       {
-        text: 'v2.0.1',
+        text: 'v2.0.2',
         items: [
+          { text: 'Changelog', link: '/changelog' },
           {
             text: 'Migration from v1 (MapTiler)',
             link: '/guide/migration-v1-to-v2',

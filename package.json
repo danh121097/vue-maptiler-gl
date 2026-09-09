@@ -1,7 +1,7 @@
 {
   "name": "vue3-maptiler-gl",
   "description": "Vue 3 components and composables for MapTiler SDK - Build interactive maps with ease",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": {
     "name": "Danh Nguyen",
     "url": "https://harrynguyen.work"
