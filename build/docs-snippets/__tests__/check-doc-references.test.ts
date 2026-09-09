@@ -78,12 +78,22 @@ describe('checkReferences', () => {
   it('reads the "N tests across M files" spelling too', () => {
     // The spelling the maintainer docs actually use, and the one the check
     // originally missed: four pages sat at "107 tests across 19 files" while
-    // the suite had grown to 31, and the gate reported nothing.
-    expect(problems('218 tests across 2 files', 2)).toEqual([]);
+    // the suite had grown to 32, and the gate reported nothing.
+    expect(problems('223 tests across 2 files', 2)).toEqual([]);
     expect(problems('107 tests across 19 files', 2)).toEqual([
       'error: the docs say 19 test files, the repository has 2',
     ]);
     expect(problems('40 assertions across 2 files', 2)).toEqual([]);
+  });
+
+  it('reads the bare "N across M files" a table row uses', () => {
+    // The spelling that survived the previous widening: a table whose row
+    // header already says "Unit Tests" drops the noun from the cell, so
+    // neither "test files" nor "tests across" appears anywhere on the line.
+    expect(problems('| **Unit Tests** | 223 across 2 files |', 2)).toEqual([]);
+    expect(problems('| **Unit Tests** | 107 across 19 files |', 2)).toEqual([
+      'error: the docs say 19 test files, the repository has 2',
+    ]);
   });
 
   it('leaves a count that is not a total claim alone', () => {

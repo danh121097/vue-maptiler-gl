@@ -14,7 +14,7 @@ Empower Vue 3 developers to build high-performance, interactive maps with minima
 - **Framework integration** - First-class Nuxt support with SSR out of the box
 - **Zero performance compromise** - Optimized bundle size, memory management, and rendering
 
-## Current Release: v2.0.1
+## Current Release: v2.0.2
 
 ### Release Summary
 
@@ -23,8 +23,10 @@ the MapTiler SDK as the engine. It was the first release with breaking API
 changes: composables now return refs instead of values unwrapped once at setup,
 so a consumer reading a status sees it change; `@maptiler/sdk` moved to
 `peerDependencies`; and the package stopped shipping a stylesheet of its own
-that consumers had not asked for. **v2.0.1** is the published latest; it changed
-only the npm landing-page READMEs. npm carries 1.0.0, 1.0.1, 2.0.0 and 2.0.1.
+that consumers had not asked for. **v2.0.1** changed only the npm landing-page READMEs, and
+**v2.0.2** only the package metadata and the docs site; neither touched the
+API, and 2.0.2 ships a `dist/` byte-identical to 2.0.1. npm carries 1.0.0,
+1.0.1, 2.0.0, 2.0.1 and 2.0.2.
 
 Consumer-facing detail is in [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md),
 which folds that whole history into the one upgrade this package's users actually make.
@@ -39,8 +41,8 @@ which folds that whole history into the one upgrade this package's users actuall
 | **TypeScript**    | Comprehensive type definitions with event handler types                                                          |
 | **Correctness**   | v2 fixed reactive status, camera promise settlement, listener attachment ordering, and post-load error recovery  |
 | **SSR Support**   | Full Nuxt SSR/SSG compatibility with browser guards                                                              |
-| **Nuxt Module**   | nuxt-maptiler-gl v2.0.1, auto-importing all 38 composables                                                       |
-| **Testing**       | 223 tests across 32 files, with a coverage ratchet in CI                                                         |
+| **Nuxt Module**   | nuxt-maptiler-gl v2.0.2, auto-importing all 38 composables                                                       |
+| **Testing**       | 224 tests across 32 files, with a coverage ratchet in CI                                                         |
 | **Documentation** | VitePress docs with API reference, guides, and examples                                                          |
 
 ## Feature Set
@@ -239,7 +241,7 @@ components and composables it imports rather than the figure above.
 ### Code Quality
 
 - **Framework**: TypeScript with strict mode
-- **Testing**: vitest, 223 tests across 32 files, with a coverage ratchet
+- **Testing**: vitest, 224 tests across 32 files, with a coverage ratchet
 - **Linting**: ESLint with Vue 3 plugin
 - **Formatting**: Prettier with consistent style
 
