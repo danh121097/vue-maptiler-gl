@@ -14,7 +14,9 @@ Vue3 MapTiler SDK offers:
 
 ## What is MapTiler SDK?
 
-MapTiler SDK is an open-source library for publishing maps on your websites. It's a fork of MapTiler GL JS and provides vector tile rendering with WebGL for high-performance, interactive maps.
+MapTiler SDK is a BSD-3-Clause JavaScript/TypeScript map SDK built on top of
+[MapLibre GL JS](https://maplibre.org/). It keeps MapLibre's WebGL vector-tile
+rendering and adds MapTiler Cloud styles, geocoding and a set of helpers on top.
 
 ## Prerequisites
 

@@ -4,9 +4,11 @@
 
 [Nuxt](https://nuxt.com) module for [vue3-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl) — interactive maps with MapTiler SDK.
 
+**📖 Full documentation: [vue-maptiler-gl.pages.dev](https://vue-maptiler-gl.pages.dev/)**
+
 ## Features
 
-- Auto-import 10+ map components (MapTiler, GeoJsonSource, FillLayer, etc.)
+- Auto-import all 10 map components (MapTiler, GeoJsonSource, FillLayer, etc.)
 - Auto-import 38 composables (useFlyTo, useMapEventListener, etc.)
 - Auto-import CSS — no manual style import needed
 - SSR-safe — components register client-only, composables have browser guards
@@ -37,6 +39,25 @@ yarn add nuxt-maptiler-gl
 ```bash
 pnpm add nuxt-maptiler-gl
 ```
+
+## MapTiler API key
+
+The key is **optional**. Any `http(s)` style URL is passed through untouched, so a
+self-hosted or third-party keyless style works with no MapTiler account at all. You
+need a key only for `maptiler://` styles, MapTiler Cloud style ids such as
+`streets-v2`, or `api.maptiler.com` URLs.
+
+Set it in a client plugin, before any map is created:
+
+```ts
+// plugins/maptiler.client.ts
+export default defineNuxtPlugin(() => {
+  useMapTilerConfig({ apiKey: 'YOUR_MAPTILER_CLOUD_KEY' });
+});
+```
+
+`useMapTilerConfig` is auto-imported like every other composable. See
+[Configuration](https://vue-maptiler-gl.pages.dev/guide/configuration).
 
 ## Setup
 
@@ -88,6 +109,11 @@ const circleStyle = ref({ 'circle-radius': 6, 'circle-color': '#007cbf' });
 </script>
 ```
 
+> **The SDK brings its own controls.** `MapOptions.navigationControl` and
+> `MapOptions.geolocateControl` both default to `true`, so a bare `<MapTiler>` already
+> shows zoom, compass and locate buttons. Pass `navigationControl: false` /
+> `geolocateControl: false` in `:options` when you place your own.
+
 ## Auto-imported Components
 
 | Component           | Description         |
@@ -107,6 +133,8 @@ const circleStyle = ref({ 'circle-radius': 6, 'circle-color': '#007cbf' });
 
 All 38 composables from vue3-maptiler-gl are auto-imported:
 `useCreateMapTiler`, `useFlyTo`, `useEaseTo`, `useJumpTo`, `useMapEventListener`, etc.
+The full list with signatures is in the
+[Composables API](https://vue-maptiler-gl.pages.dev/api/composables).
 
 ## Releasing
 
