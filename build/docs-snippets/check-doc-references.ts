@@ -31,20 +31,23 @@ const SCRIPT_RE = /\b(?:bun|npm|pnpm|yarn)\s+run\s+([a-z0-9:_-]+)/g;
 /**
  * A path into this package's own build output, however it is spelled: an
  * import specifier (`vue3-maptiler-gl/dist/style.css`) or a CDN URL
- * (`unpkg.com/vue3-maptiler-gl@latest/dist/index.umd.cjs`). MapTiler's own
+ * (`unpkg.com/vue3-maptiler-gl@latest/dist/index.js`). MapTiler's own
  * `dist/` paths are left alone; they are not this build's to keep true.
  */
 const DIST_RE = /vue3-maptiler-gl(?:@[^/\s]+)?\/(dist\/[A-Za-z0-9._/-]+)/g;
 
 /**
- * The size of the test suite, as the overview states it. The number that was
- * there said 107 across 19 files while the suite had grown to 31, which is the
- * ordinary fate of a hand-maintained count. Only the file count is asserted:
+ * The size of the test suite, as the overview states it, in either spelling:
+ * "31 test files", or "218 tests across 31 files". The number that was there
+ * said 107 across 19 files while the suite had grown to 31 — and the second
+ * spelling was the one the check did not read, which is how it stayed wrong.
+ * Only the file count is asserted:
  * it is a glob, whereas the number of assertions is only knowable by running
  * them, and a check that has to run the suite to read the docs is not a check
  * anyone will keep.
  */
-const TEST_FILE_COUNT_RE = /\b(\d+)\s+test\s+files\b/g;
+const TEST_FILE_COUNT_RE =
+  /\b(\d+)\s+test\s+files\b|\b\d+\s+(?:tests?|assertions?)\s+across\s+(\d+)\s+files\b/g;
 
 /** Every `*.test.ts` under a `__tests__` directory, which is where they live. */
 function testFileCount(dir: string): number {
@@ -129,7 +132,10 @@ export function checkReferences(
           ),
           ...[...line.matchAll(TEST_FILE_COUNT_RE)].map(
             (match): [string, string, number, string] => [
-              match[1]!,
+              // Either spelling of the same claim: "31 test files", or the
+              // "218 tests across 31 files" form the roadmap uses, which went
+              // unchecked and sat at a stale 19 for a whole major.
+              (match[1] ?? match[2])!,
               'test files',
               testFiles,
               'the repository has',

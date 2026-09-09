@@ -1,11 +1,10 @@
 /**
- * Options shared by the two library build passes.
+ * Options for the library build.
  *
- * The ES pass (`vite.config.ts`) emits preserved modules so consumers can
- * tree-shake at file granularity; the UMD pass (`vite.config.umd.ts`) emits a
- * single self-contained bundle. Rollup cannot do both in one pass — UMD is a
- * code-splitting-free format and preserved modules are code splitting — so the
- * pieces both passes need live here rather than being duplicated.
+ * The build emits preserved modules so consumers can tree-shake at file
+ * granularity. These pieces live here rather than inline in `vite.config.ts`
+ * so the config reads as configuration and the reasoning behind each setting
+ * stays next to it.
  */
 import { resolve } from 'path';
 import vue from '@vitejs/plugin-vue';
@@ -14,12 +13,6 @@ import type { PreRenderedAsset, PreRenderedChunk } from 'rollup';
 
 /** Dependencies the consumer supplies; never bundled into the output. */
 export const externalDependencies = ['vue', '@maptiler/sdk'];
-
-/** Global names for the UMD build's externals. */
-export const umdGlobals = {
-  vue: 'Vue',
-  '@maptiler/sdk': 'maptilersdk',
-} as const;
 
 /**
  * Path aliases used across `libs/`.
@@ -36,7 +29,7 @@ export function createResolveAliases(projectRoot: string) {
   };
 }
 
-/** The Vue SFC plugin, configured identically for both passes. */
+/** The Vue SFC plugin. */
 export function createVuePlugin(): PluginOption {
   return vue({
     template: {
@@ -50,10 +43,7 @@ export function createVuePlugin(): PluginOption {
   });
 }
 
-/**
- * Emit every CSS asset as `style.css`. Vite requires a single asset naming
- * pattern across all outputs, so both passes use this one.
- */
+/** Emit every CSS asset as `style.css` rather than a hashed name. */
 export const assetFileNames = (assetInfo: PreRenderedAsset): string => {
   if (assetInfo.names?.some((name) => name.endsWith('.css'))) {
     return 'style.css';
@@ -62,7 +52,7 @@ export const assetFileNames = (assetInfo: PreRenderedAsset): string => {
 };
 
 /**
- * Terser settings shared by both passes.
+ * Terser settings.
  *
  * `drop_console` stays off on purpose: `useLogger` is the library's only
  * logging path and it is pure `console.*` behind `if (debug)` guards, so
@@ -120,7 +110,7 @@ const STYLE_MODULE_ID = /\.(css|scss|sass|less|styl)(\?|$)|[?&]type=style/;
 export const moduleSideEffects = (id: string): boolean =>
   STYLE_MODULE_ID.test(id);
 
-/** Tree-shaking settings shared by both passes. */
+/** Tree-shaking settings. */
 export const treeshakeOptions = {
   moduleSideEffects,
   propertyReadSideEffects: false,

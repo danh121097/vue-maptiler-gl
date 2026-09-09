@@ -17,6 +17,9 @@ const options = computed<MapOptions>(() => ({
   // Cloud style, so this demo runs with no account and no API key. Set
   // `config.apiKey` and pass e.g. 'streets-v2' to use MapTiler Cloud.
   style: 'https://tiles.openfreemap.org/styles/liberty',
+  // The SDK adds its own geolocate control by default, so `<GeolocateControls>`
+  // below would render a second locate button beside it.
+  geolocateControl: false,
   center: [103.8198, 1.3521],
   zoom: 12,
   minZoom: 9,

@@ -7,6 +7,29 @@ MapTiler's own class, constructed and handed to `map.addControl()`.
 There is no `<NavigationControl>` component, and there never was. If you find a
 snippet importing one from `vue3-maptiler-gl`, it is wrong.
 
+## The SDK adds two controls before you add any
+
+::: warning `<GeolocateControls>` gives you a second geolocate button
+Unlike MapLibre, the MapTiler SDK puts a navigation control and a geolocate
+control on every map it constructs: `navigationControl` and `geolocateControl`
+both default to `true` in `MapOptions`. So a bare `<MapTiler>` with no children
+already shows zoom in, zoom out, compass and locate — and adding
+`<GeolocateControls>` on top of that renders **two** locate buttons.
+
+Turn the SDK's own off in `:options` when you are placing controls yourself:
+
+```ts
+const mapOptions = {
+  style: 'https://demotiles.maplibre.org/style.json',
+  geolocateControl: false, // `<GeolocateControls>` provides this one
+  navigationControl: false, // or leave it on and skip addControl below
+};
+```
+
+`terrainControl`, `scaleControl` and `fullscreenControl` default to `false` and
+behave the way MapLibre users expect.
+:::
+
 ## Geolocation
 
 `<GeolocateControls>` wraps MapTiler's `GeolocateControl` and adds Vue events.
@@ -215,5 +238,5 @@ control inherits the built-in styling and spacing.
 
 - [`GeolocateControls` API](/api/components#geolocatecontrols)
 - [`useGeolocateControl` API](/api/composables#usegeolocatecontrol)
-- [Migration to v6](/guide/migration-v6) — why the MapTiler runtime moved to the
+- [Migration from v1](/guide/migration-v1-to-v2) — why the MapTiler runtime moved to the
   `vue3-maptiler-gl/maptiler` subpath

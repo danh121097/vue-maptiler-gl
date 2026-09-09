@@ -8,7 +8,7 @@ rotate and `useJumpTo` composables also keep a legacy positional
 — not the full result documented here.
 
 Every state field is a `ComputedRef`; read it with `.value` in script, unwrapped
-in templates. See [Migration from v5 to v6](/guide/migration-v6) for the list.
+in templates. The list is below.
 
 ## Architecture
 

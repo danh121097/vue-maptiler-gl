@@ -11,27 +11,27 @@ document that is wrong a month later.
 
 ## Current state
 
-**v6.0.1 is the published latest.** v6.0.0 was published and then deprecated: it was
-built before `@maptiler/sdk` moved to `peerDependencies`, so its manifest still
-declared the runtime as a direct dependency.
+**v1.0.1 is the published latest; v2.0.0 is prepared but not yet published.**
+v2.0.0 is the port onto the `vue3-maplibre-gl` v6 API, and it is breaking — see
+[the v1 → v2 migration guide](./guide/migration-v1-to-v2.md).
 
 |             |                                                           |
 | ----------- | --------------------------------------------------------- |
 | Components  | 10                                                        |
 | Composables | 38, all exported from the package root                    |
-| Tests       | 107 across 19 files                                       |
-| Coverage    | 41% statements / 36% branches / 39% functions / 42% lines |
-| Nuxt module | `nuxt-maptiler-gl` 2.0.0, published                       |
+| Tests       | 219 across 31 files                                       |
+| Coverage    | 42% statements / 37% branches / 40% functions / 43% lines |
+| Nuxt module | `nuxt-maptiler-gl` 2.0.0, not yet published               |
 
 Coverage is enforced as a ratchet in `vitest.config.ts`: every threshold is the
 number a file actually reached, so a change that lowers it fails CI. The global
 figure is low because most layer, source and control composables have no tests
 at all — see Known gaps.
 
-## What v6 changed
+## What v2 changed
 
 Behavioural changes are documented for consumers in
-[the v6 migration guide](./guide/migration-v6.md). In short:
+[the v1 → v2 migration guide](./guide/migration-v1-to-v2.md). In short:
 
 - **Composables return refs.** v5 unwrapped its reactive state once in the
   return object, so every status a consumer read was frozen at setup. This is
@@ -75,22 +75,22 @@ the property-setter and lifecycle logic that the v6 fixes touched.
 
 - **No integration test runs a real map.** Every test uses a hand-written mock,
   so a wrong assumption about MapTiler's behaviour is invisible until a
-  consumer hits it. The camera event bugs fixed in v6 were exactly this.
+  consumer hits it. The camera event bugs fixed in v2 were exactly this.
 - **No expression type hints.** MapTiler style expressions are typed as loose
   arrays; a malformed expression fails at runtime.
-- **UMD build externalizes `@maptiler/sdk`,** so the CDN snippet needs the global
-  `maptilersdk` script loaded first. Documented, but a footgun.
+- **No classic `<script>` install.** `@maptiler/sdk` is ESM-only, so this
+  package dropped its UMD build; CDN users need `<script type="module">`.
 - **No benchmark backs any performance claim.** The maintainer docs now state
   only measured bundle sizes and describe what the code does, because the
   figures they used to assert (frame rates, memory ceilings, adoption numbers)
   had nothing measuring them.
 
-## Candidates for 6.x
+## Candidates for 2.x
 
 Backward-compatible work, roughly in the order it would pay off.
 
 1. **Tests for the four layer composables and `useLayer`.** Largest untested
-   surface, and the one v6 changed most.
+   surface, and the one v2 changed most.
 2. **A browser-based smoke test** (one real map, one real style) to catch the
    class of defect the mocks cannot.
 3. **Expression builder helpers** with typed operators, replacing raw arrays at
@@ -100,7 +100,7 @@ Backward-compatible work, roughly in the order it would pay off.
 5. **Sprite / icon management composable.** `useCreateImage` handles one image;
    nothing helps with a sprite sheet.
 
-## Candidates for 7.0
+## Candidates for 3.0
 
 Only breaking work belongs here. Nothing is committed.
 
@@ -108,9 +108,7 @@ Only breaking work belongs here. Nothing is committed.
   `*Status` enum plus boolean mirrors; a single shared shape would be smaller to
   learn, and cannot change without a major.
 - **Consolidate the four layer composables** onto `useCreateLayer` with a
-  discriminated type, if the tests in 6.x show the wrappers add nothing.
-- **Drop the UMD build** if usage data does not justify maintaining a second
-  build pass and its CSS-ordering hazard.
+  discriminated type, if the tests in 2.x show the wrappers add nothing.
 
 ## Compatibility
 
@@ -119,7 +117,7 @@ Current declared support, from `package.json`:
 | Dependency      | Range    | Kind                            |
 | --------------- | -------- | ------------------------------- |
 | `vue`           | `^3.0.0` | peer                            |
-| `@maptiler/sdk` | `^5.6.1` | peer                            |
+| `@maptiler/sdk` | `^4.1.0` | peer                            |
 | `typescript`    | `^5.4.5` | dev — build and type generation |
 
 `nuxt-maptiler-gl` declares `nuxt >=3.0.0` as a peer and keeps `@maptiler/sdk` in

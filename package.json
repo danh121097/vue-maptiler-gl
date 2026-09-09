@@ -29,14 +29,13 @@
     "LICENSE"
   ],
   "module": "./dist/index.js",
-  "main": "./dist/index.umd.cjs",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.umd.cjs",
       "default": "./dist/index.js"
     },
     "./maptiler": {
@@ -67,7 +66,7 @@
   ],
   "scripts": {
     "dev": "cd examples && vite --port 8080",
-    "build": "bun run clean && vite build && vite build --config vite.config.umd.ts",
+    "build": "bun run clean && vite build",
     "clean": "rm -rf dist",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx --fix",
@@ -78,9 +77,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "type-check": "vue-tsc --noEmit",
+    "parity:check": "bun run build/assert-parity.ts",
     "test:build": "bun run build && bun pm pack --dry-run",
     "prepublishOnly": "bun run format:check && bun run lint:check && bun run type-check && bun run test:coverage && bun run build && bun run docs:check",
-    "publish:vue": "bun run build/assert-version-unpublished.ts package.json && bun run build && npm publish --access public",
+    "publish:vue": "bun run build/assert-version-unpublished.ts package.json && bun run parity:check -- --strict && bun run build && npm publish --access public",
     "publish:nuxt": "bun run build/assert-version-unpublished.ts nuxt/package.json && bun run build/assert-nuxt-dependency-published.ts && cd nuxt && bun install && bun run build && npm --prefix nuxt publish --access public",
     "changelog": "bun run build/update-changelog.ts",
     "docs:check": "bun run build/docs-snippets/check-doc-snippets.ts",

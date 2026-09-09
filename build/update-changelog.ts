@@ -12,7 +12,7 @@
  * the version bump, and leaves CI with nothing to write back to the repository.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const rootDir = resolve(import.meta.dirname, '..');
@@ -49,7 +49,12 @@ if (!section) {
   process.exit(0);
 }
 
-const changelog = readFileSync(changelogPath, 'utf8');
+// The file does not exist until the first release written from this history.
+// The ported one described `vue3-maplibre-gl`'s v1–v6, a history this package
+// never had, so it was removed rather than carried forward.
+const changelog = existsSync(changelogPath)
+  ? readFileSync(changelogPath, 'utf8')
+  : TITLE;
 if (!changelog.startsWith(TITLE)) {
   console.error(`docs/changelog.md does not start with "${TITLE}".`);
   process.exit(1);

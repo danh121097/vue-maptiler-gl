@@ -722,14 +722,19 @@ what came back:
 | Slots                   | a bogus row, and a dropped row              | 2/2          |
 | Documented types        | the first parameter of every alias          | 27/27        |
 | Template attributes     | `:__canary__="1"` on every component tag    | 114/114 tags |
-| Links, scripts, `dist/` | a bogus one appended to every page          | 25/25 pages  |
-| Prose names             | `useCanaryBogus` appended to every page     | 23/25 pages† |
+| Links, scripts, `dist/` | a bogus one appended to every page          | 23/23 pages  |
+| Prose names             | `useCanaryBogus` appended to every page     | 23/23 pages† |
 
 \* `useMapTiler` spreads `MapTilerMethods` and says so in prose, so its
 completeness direction is the one documented opt-out. Its row _names_ are still
 checked.
-† The changelog and the v5 migration guide are the documented `HISTORICAL`
-exemption: naming a removed composable is what those pages are for.
+† Every page, because the `HISTORICAL` exemption — `changelog.md` and
+`migration-v<n>.md`, whose job is naming what the library no longer has —
+currently matches none of them. It matched two upstream, and the sweep read
+23/25 there. Those pages described a version history this package never had and
+were removed; `migration-v1-to-v2.md` does not match the pattern and opts out
+paragraph by paragraph with `names-skip` instead. Keep the exemption: the next
+changelog will need it.
 
 Two corruptions are needed where one would seem to do, because a canary value
 has a type of its own. A row typed `string` accepts `'__canary__'` and a row
@@ -822,8 +827,8 @@ including `source-id` on a component whose prop is `id` — in six examples.
 Names in prose are checked too. A name in a sentence or a heading is not a name
 in a code block, which is how the README came to advertise `useBounds` and
 `useZoom` on the page npm renders; neither has ever existed. Every backticked
-`use…` name must be exported, except on the changelog and the migration guides,
-whose job is to describe what the library no longer has. Write `useZoom*` for a
+`use…` name must be exported, except on a changelog or a `migration-v<n>.md`
+guide, whose job is to describe what the library no longer has. Write `useZoom*` for a
 family, and the star is checked as a prefix. A paragraph that has to name
 something because it does _not_ exist opts out with a marker carrying a reason,
 `<!-- names-skip: … -->`, which ends at the next blank line — the paragraph
@@ -933,7 +938,7 @@ element.appendChild(domElement); // Safe DOM element
 
 ### MapTiler SDK
 
-- Current: `^5.6.1`, declared as a peer dependency so the app owns the version
+- Current: `^4.1.0`, declared as a peer dependency so the app owns the version
 - Never directly call private APIs (e.g., `map._loaded`)
 
 ## Internationalization
@@ -982,7 +987,7 @@ Not currently implemented, but planned for future versions.
 - v6 did not get one. The composable return types were wrong rather than
   merely outdated — a status unwrapped at setup could not be deprecated into
   correctness, only replaced — so the break was immediate and documented in
-  [the v6 migration guide](./guide/migration-v6.md) instead
+  [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md) instead
 - Any break, with or without a cycle, ships with a migration guide
 
 ## Code Review Standards

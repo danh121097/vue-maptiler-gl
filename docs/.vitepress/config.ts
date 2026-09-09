@@ -48,15 +48,12 @@ export default defineConfig({
       { text: 'API', link: '/api/components' },
       { text: 'Examples', link: '/examples/' },
       {
-        text: 'v6.0.1',
+        text: 'v2.0.0',
         items: [
-          { text: 'Changelog', link: '/changelog' },
           {
             text: 'Migration from v1 (MapTiler)',
             link: '/guide/migration-v1-to-v2',
           },
-          { text: 'Migration from v5', link: '/guide/migration-v6' },
-          { text: 'Migration from v4', link: '/guide/migration-v5' },
         ],
       },
     ],
@@ -89,8 +86,6 @@ export default defineConfig({
               text: 'Migration from v1 (MapTiler)',
               link: '/guide/migration-v1-to-v2',
             },
-            { text: 'Migration from v5', link: '/guide/migration-v6' },
-            { text: 'Migration from v4', link: '/guide/migration-v5' },
           ],
         },
       ],

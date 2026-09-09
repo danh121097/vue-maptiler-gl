@@ -2,7 +2,7 @@
 
 v2 rebuilds this package on the API of [`vue3-maplibre-gl`](https://github.com/danh121097/vue-maplibre-gl) v6, swapping the engine for the [MapTiler SDK](https://docs.maptiler.com/sdk-js/). Everything that library offers is now here, under MapTiler names.
 
-That brings in every change from its own v4 → v5 → v6 history at once, so read [Migration from v4](/guide/migration-v5) and [Migration from v5](/guide/migration-v6) as well — the reactivity fix described there is the largest behavioural change in this release.
+That brings in every change from its v4 → v5 → v6 history at once. The largest of them is a reactivity fix: composable getters such as `getZoom` and `getCenter` are now reactive `ComputedRef`s rather than plain functions, so read them as `zoom.value` and drop the call parentheses in templates. [Composables Overview](/guide/composables-overview) lists which ones changed.
 
 Three breaking changes are specific to _this_ package and are not covered by those pages.
 
@@ -80,6 +80,18 @@ function applyStyle() {
   setStyle(style);
 }
 ```
+
+## Also worth knowing: the SDK brings its own controls
+
+This is not a v1 → v2 change — it has been true for as long as this package has
+wrapped the MapTiler SDK — but it surprises anyone reading a `vue3-maplibre-gl`
+example, so it is worth stating. `MapOptions.navigationControl` and
+`MapOptions.geolocateControl` both default to `true` in the SDK, where MapLibre
+adds no controls at all. A bare `<MapTiler>` therefore already shows zoom,
+compass and locate buttons, and `<GeolocateControls>` adds a second locate
+button beside the SDK's. Pass `geolocateControl: false` (and
+`navigationControl: false` if you place your own) in `:options`. See
+[Controls](/examples/controls).
 
 ## What is new: `apiKey`
 

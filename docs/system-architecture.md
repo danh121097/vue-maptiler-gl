@@ -587,7 +587,7 @@ Vue3-MapTiler SDK Extended Types
 
 ### Event Handler Types
 
-New in v5 for better IDE support:
+Added in v2 for better IDE support:
 
 ```typescript
 export type MapClickHandler = (e: MapMouseEvent) => void;
@@ -635,8 +635,8 @@ export function useCreateFillLayer<
 - Tree-shakeable exports enable dead-code elimination
 - Factory consolidation reduces generated code
 - CSS extracted and optimized
-- Build output: UMD 20 KB gzipped, ES entry chunks 2 KB gzipped, with
-  `@maptiler/sdk` externalized in both
+- Build output: ES entry chunks 2.2 KB gzipped, with `@maptiler/sdk`
+  externalized
 
 ## SSR/Nuxt Integration
 
@@ -755,7 +755,7 @@ export function useCustomListener(target: MapInstance, handler: Callback) {
 
 ### Test Coverage
 
-107 tests across 19 files, run with Vitest under happy-dom. Coverage is enforced
+219 tests across 31 files, run with Vitest under happy-dom. Coverage is enforced
 as a ratchet in `vitest.config.ts` — see
 [`code-standards.md`](./code-standards.md).
 

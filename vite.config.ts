@@ -21,7 +21,10 @@ import {
  * `dist/composables/index.js` and `dist/maptiler-reexports.js`, which back the
  * package's `exports` subpaths.
  *
- * The UMD single-file bundle is a second pass: see `vite.config.umd.ts`.
+ * There is no UMD pass. `@maptiler/sdk` ships an ES module only — its `exports`
+ * map offers a single `"import"` condition and no browser global — so a UMD
+ * bundle of this package could never resolve its own peer dependency.
+ * `docs/guide/installation.md` documents this for consumers.
  */
 export default defineConfig({
   plugins: [
@@ -53,10 +56,6 @@ export default defineConfig({
   build: {
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
-    // This pass runs first and owns the clean slate. Running it on its own
-    // therefore leaves a dist/ with no index.umd.cjs, which `main` and the
-    // `require` condition still point at — always build via `bun run build`,
-    // which chains the UMD pass after it.
     emptyOutDir: true,
     lib: {
       entry: {

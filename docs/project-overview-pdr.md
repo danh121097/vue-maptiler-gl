@@ -14,18 +14,20 @@ Empower Vue 3 developers to build high-performance, interactive maps with minima
 - **Framework integration** - First-class Nuxt support with SSR out of the box
 - **Zero performance compromise** - Optimized bundle size, memory management, and rendering
 
-## Current Release: v6.0.1
+## Current Release: v2.0.0
 
 ### Release Summary
 
-**v6.0.0** is the first release with breaking API changes since v4. Composables
-now return refs instead of values unwrapped once at setup, so a consumer reading
-a status sees it change. `@maptiler/sdk` moved to `peerDependencies`, and the
-package stopped shipping MapTiler's stylesheet. **v6.0.1** corrects the manifest
-of v6.0.0, which was built before the peer change landed; v6.0.0 is deprecated
-on npm.
+**v2.0.0** rebuilds this package on the API of `vue3-maplibre-gl` v6, keeping
+the MapTiler SDK as the engine. It is the first release with breaking API
+changes: composables now return refs instead of values unwrapped once at setup,
+so a consumer reading a status sees it change; `@maptiler/sdk` moved to
+`peerDependencies`; and the package stopped shipping a stylesheet of its own
+that consumers had not asked for. npm carries 1.0.0 and 1.0.1; v2.0.0 is not
+published yet.
 
-Consumer-facing detail is in [the v6 migration guide](./guide/migration-v6.md).
+Consumer-facing detail is in [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md),
+which folds that whole history into the one upgrade this package's users actually make.
 
 ### Key Achievements
 
@@ -38,7 +40,7 @@ Consumer-facing detail is in [the v6 migration guide](./guide/migration-v6.md).
 | **Correctness**   | v6 fixed reactive status, camera promise settlement, listener attachment ordering, and post-load error recovery  |
 | **SSR Support**   | Full Nuxt SSR/SSG compatibility with browser guards                                                              |
 | **Nuxt Module**   | nuxt-maptiler-gl v2.0.0, auto-importing all 38 composables                                                       |
-| **Testing**       | 107 tests across 19 files, with a coverage ratchet in CI                                                         |
+| **Testing**       | 219 tests across 31 files, with a coverage ratchet in CI                                                         |
 | **Documentation** | VitePress docs with API reference, guides, and examples                                                          |
 
 ## Feature Set
@@ -200,7 +202,7 @@ MapTiler (Root Provider)
 ### Dependencies
 
 - **Vue 3**: `^3.0.0` (peer)
-- **MapTiler SDK**: `^5.6.1` (peer — the app installs it, so one copy is shared)
+- **MapTiler SDK**: `^4.1.0` (peer — the app installs it, so one copy is shared)
 - **TypeScript**: `^5.4.5` (dev — build and type generation)
 
 ### Browser Support
@@ -212,24 +214,24 @@ MapTiler (Root Provider)
 
 ### Build Output
 
-- **ESM** (ES modules) - tree-shakeable, modern tooling
-- **UMD** (Universal Module Definition) - CDN usage, legacy projects
+- **ESM** (ES modules) - tree-shakeable, modern tooling, and the only format;
+  `@maptiler/sdk` ships no UMD bundle and no browser global, so a UMD build of
+  this package could not resolve its own peer dependency
 - **TypeScript Declarations** - Full type support
 - **CSS** - `dist/style.css`, this package's own rules only. MapTiler's own
   stylesheet is imported separately, the way MapTiler documents it.
 
 ### Package Size
 
-Measured on the built `dist`, with `@maptiler/sdk` externalized in both builds —
-it is a peer dependency, so it is never bundled in these numbers.
+Measured on the built `dist`, with `@maptiler/sdk` externalized — it is a peer
+dependency, so it is never bundled in these numbers.
 
-| Artifact              | Raw    | Gzipped |
-| --------------------- | ------ | ------- |
-| UMD (`index.umd.cjs`) | 84 KB  | 20 KB   |
-| ES entry chunks       | 8.4 KB | 2.0 KB  |
-| `style.css`           | 78 B   | —       |
+| Artifact        | Raw   | Gzipped |
+| --------------- | ----- | ------- |
+| ES entry chunks | 13 KB | 2.2 KB  |
+| `style.css`     | 78 B  | —       |
 
-The ES build is split per module and tree-shakeable, so an app pays for the
+The build is split per module and tree-shakeable, so an app pays for the
 components and composables it imports rather than the figure above.
 
 ## Development Standards
@@ -237,7 +239,7 @@ components and composables it imports rather than the figure above.
 ### Code Quality
 
 - **Framework**: TypeScript with strict mode
-- **Testing**: vitest, 107 tests across 19 files, with a coverage ratchet
+- **Testing**: vitest, 219 tests across 31 files, with a coverage ratchet
 - **Linting**: ESLint with Vue 3 plugin
 - **Formatting**: Prettier with consistent style
 

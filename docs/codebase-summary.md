@@ -123,7 +123,6 @@ vue-maptiler-gl/ (root)
 │   ├── public/                    # Static assets copied to dist root
 │   │   └── _headers               # Cloudflare Pages cache-control rules
 │   ├── index.md                   # Home page
-│   ├── changelog.md               # Release notes
 │   ├── api/                       # API reference
 │   │   ├── components.md          # Component API
 │   │   ├── composables.md         # Composable API
@@ -134,7 +133,7 @@ vue-maptiler-gl/ (root)
 │   │   ├── configuration.md
 │   │   ├── basic-usage.md
 │   │   ├── composables-overview.md
-│   │   ├── migration-v5.md
+│   │   ├── migration-v1-to-v2.md
 │   │   └── ssr-nuxt.md
 │   └── examples/                  # Usage examples
 │       ├── index.md
@@ -396,7 +395,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 ### Build Configuration
 
 - **Tool**: Vite with TypeScript
-- **Output**: ESM, UMD, CJS, type definitions
+- **Output**: ESM (preserved modules) and type definitions
 - **CSS**: Extracted and optimized
 
 ### Package Configuration
@@ -404,15 +403,14 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 **Main Package** (`libs/`):
 
 - **Name**: `vue3-maptiler-gl`
-- **Version**: `5.0.0`
-- **Main**: `dist/index.js` (ESM default)
-- **UMD**: `dist/index.umd.cjs`
+- **Version**: `2.0.0`
+- **Main**: `dist/index.js` (the package is ESM-only)
 - **Exports**: Named exports, subpaths for components/composables
 
 **Nuxt Module** (`nuxt/`):
 
 - **Name**: `nuxt-maptiler-gl`
-- **Version**: `1.0.0`
+- **Version**: `2.0.0`
 - **Auto-imports**: Components and composables
 - **Features**: CSS auto-inject, SSR support
 
@@ -424,7 +422,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **Configuration**: `vitest.config.ts`
 - **Test Files**: `__tests__/` directories
 
-### Test Coverage (107 tests across 19 files)
+### Test Coverage (219 tests across 31 files)
 
 - `create-event-listener-composable.test.ts` - Factory pattern tests
 - `create-layer-property-setters.test.ts` - Type preservation tests
@@ -439,14 +437,13 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **API Docs**: Component and composable references
 - **Guides**: Step-by-step tutorials
 - **Examples**: Runnable code examples
-- **Changelog**: Release notes for all versions
 
 ### Key Documentation Files
 
 - `docs/project-overview-pdr.md` - Project vision and requirements
 - `docs/system-architecture.md` - Architecture and patterns
 - `docs/code-standards.md` - Development guidelines
-- `docs/guide/migration-v5.md` - Upgrade guide
+- `docs/guide/migration-v1-to-v2.md` - Upgrade guide
 
 ## CI/CD Workflows
 
@@ -464,7 +461,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 Both runtime dependencies are peers, so the app owns the versions:
 
 - **Vue**: `^3.0.0` (peer)
-- **MapTiler SDK**: `^5.6.1` (peer)
+- **MapTiler SDK**: `^4.1.0` (peer)
 - **TypeScript**: `^5.4.5` (dev — build and type generation)
 
 ### Nuxt Module
@@ -472,22 +469,21 @@ Both runtime dependencies are peers, so the app owns the versions:
 - **@nuxt/kit**: `^3.15.0`
 - **Nuxt**: `>=3.0.0` (peer)
 - **@maptiler/sdk** and **vue3-maptiler-gl**: direct dependencies, so a Nuxt app
-  installs one package and is unaffected by the peer change in v6.
+  installs one package and is unaffected by the peer change in v2.
 
 ## Performance Characteristics
 
 ### Bundle Size
 
-Measured on the built `dist`. `@maptiler/sdk` is externalized in both builds, so
-it is not counted here.
+Measured on the built `dist`. `@maptiler/sdk` is externalized, so it is not
+counted here.
 
-| Artifact              | Raw    | Gzipped |
-| --------------------- | ------ | ------- |
-| UMD (`index.umd.cjs`) | 84 KB  | 20 KB   |
-| ES entry chunks       | 8.4 KB | 2.0 KB  |
-| `style.css`           | 78 B   | —       |
+| Artifact        | Raw   | Gzipped |
+| --------------- | ----- | ------- |
+| ES entry chunks | 13 KB | 2.2 KB  |
+| `style.css`     | 78 B  | —       |
 
-The ES build is split per module, so an app pays only for what it imports.
+The build is split per module, so an app pays only for what it imports.
 
 ### Memory and Rendering
 
@@ -526,10 +522,9 @@ Nothing here is benchmarked, so no figures are claimed. What the code does do:
 
 ## Migration Path
 
-- **v4 → v5**: Zero breaking changes, internal refactor only
-- **v5 → v6**: Breaking. Composables return refs, `@maptiler/sdk` became a peer
+- **v1 → v2**: Breaking. Composables return refs, `@maptiler/sdk` became a peer
   dependency, and the stylesheets separated. See
-  [the v6 migration guide](./guide/migration-v6.md).
+  [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md).
 
 ## Known Limitations
 

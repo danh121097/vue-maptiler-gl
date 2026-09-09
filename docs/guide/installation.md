@@ -4,16 +4,16 @@
 
 Vue3 MapTiler SDK is available on npm and can be installed using your preferred package manager.
 
-Every command below installs two packages, because `@maptiler/sdk` is a peer dependency since v6. npm and Bun would pull it in on their own, but Yarn and pnpm would not, and naming it explicitly is the one command that is correct everywhere — it also pins the MapTiler version your app runs against.
+Every command below installs two packages, because `@maptiler/sdk` is a peer dependency as of v2. npm and Bun would pull it in on their own, but Yarn and pnpm would not, and naming it explicitly is the one command that is correct everywhere — it also pins the MapTiler version your app runs against.
 
 ::: tip Why a peer dependency
 This package re-exports MapTiler's own classes and types, and your app imports MapTiler's stylesheet directly. If both your app and this package resolved their own copy of `@maptiler/sdk`, a `Map` produced by one would fail an `instanceof` check in the other and two copies of the runtime would ship. Declaring it as a peer means there is exactly one, on a version you choose.
 :::
 
-Since v6 the two stylesheets are separate: this package ships only its own rules, and you import MapTiler's own stylesheet the way MapTiler documents it. See [Setup in Vue 3](#setup-in-vue-3).
+Since v2 the two stylesheets are separate: this package ships only its own rules, and you import MapTiler's own stylesheet the way MapTiler documents it. See [Setup in Vue 3](#setup-in-vue-3).
 
 ::: warning pnpm
-pnpm's isolated `node_modules` does not expose a dependency your app did not install itself, so `import '@maptiler/sdk/dist/maptiler-sdk.css'` fails unless `@maptiler/sdk` is in your own `package.json`. This has been true since v6 split the stylesheets, independently of the peer dependency.
+pnpm's isolated `node_modules` does not expose a dependency your app did not install itself, so `import '@maptiler/sdk/dist/maptiler-sdk.css'` fails unless `@maptiler/sdk` is in your own `package.json`. This has been true since v2 split the stylesheets, independently of the peer dependency.
 :::
 
 ::: code-group
@@ -38,31 +38,46 @@ pnpm add vue3-maptiler-gl @maptiler/sdk
 
 ## CDN Installation
 
-You can also use Vue MapTiler SDK directly from a CDN, but only as **ES modules**.
+You can use Vue MapTiler SDK from a CDN, but only as **ES modules**, and only
+from a CDN that rewrites dependencies.
 
 ::: warning No UMD / classic `<script>` build
 `@maptiler/sdk` ships an ES module only — its `package.json` exposes a single
 `"import"` condition and no UMD bundle, so there is no global `maptilersdk`
-script to load. That also makes this package's own `dist/index.umd.cjs`
-unusable: `require()`-ing it fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` when it
-reaches for the SDK. Use the ESM entry points below, or a bundler.
+script to load, and `require('@maptiler/sdk')` fails with
+`ERR_PACKAGE_PATH_NOT_EXPORTED`. A UMD build of this package could therefore
+never resolve its own peer dependency, so this package does not ship one
+either: there is no `dist/index.umd.cjs` and no `require` export condition.
+:::
+
+::: warning A raw file CDN is not enough
+The published modules import `vue` and `@maptiler/sdk` by bare name, the way
+every npm package does. A browser cannot resolve a bare name, so loading
+`unpkg.com/vue3-maptiler-gl/dist/index.js` straight into a `<script
+type="module">` fails at the first import. Use an ESM CDN that rewrites those
+specifiers — the example below uses [esm.sh](https://esm.sh) — or an import map
+that names every dependency, or a bundler.
 :::
 
 ```html
 <link
-  href="https://unpkg.com/@maptiler/sdk@latest/dist/maptiler-sdk.css"
+  href="https://unpkg.com/@maptiler/sdk@4/dist/maptiler-sdk.css"
   rel="stylesheet"
 />
 <link
-  href="https://unpkg.com/vue3-maptiler-gl@latest/dist/style.css"
+  href="https://unpkg.com/vue3-maptiler-gl@2/dist/style.css"
   rel="stylesheet"
 />
 
 <script type="module">
-  import * as maptilersdk from 'https://unpkg.com/@maptiler/sdk@latest/dist/maptiler-sdk.mjs';
-  import { MapTiler } from 'https://unpkg.com/vue3-maptiler-gl@latest/dist/index.js';
+  import { createApp } from 'https://esm.sh/vue@3';
+  import { MapTiler } from 'https://esm.sh/vue3-maptiler-gl@2';
 </script>
 ```
+
+Pin a major rather than `@latest`: an ESM CDN resolves the peer dependency for
+you, and `@latest` lets it resolve a different Vue than the page already has,
+which ends in two Vue runtimes and components that never mount.
 
 ## Setup in Vue 3
 
@@ -303,7 +318,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 ### Common Issues
 
 1. **CSS not loading**: Make sure to import both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
-2. **Module not found**: Reinstall `vue3-maptiler-gl` so its `@maptiler/sdk` dependency is present in `node_modules`
+2. **Module not found**: `@maptiler/sdk` is a peer dependency, so reinstalling this package will not supply it — install it in your own app (`bun add @maptiler/sdk`)
 3. **TypeScript errors**: Update your TypeScript configuration to include the package types
 
 ### Browser Compatibility
