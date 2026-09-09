@@ -422,7 +422,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **Configuration**: `vitest.config.ts`
 - **Test Files**: `__tests__/` directories
 
-### Test Coverage (219 tests across 31 files)
+### Test Coverage (223 tests across 32 files)
 
 - `create-event-listener-composable.test.ts` - Factory pattern tests
 - `create-layer-property-setters.test.ts` - Type preservation tests

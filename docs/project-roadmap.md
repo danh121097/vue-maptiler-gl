@@ -20,7 +20,7 @@ only the npm landing-page READMEs.
 | ----------- | --------------------------------------------------------- |
 | Components  | 10                                                        |
 | Composables | 38, all exported from the package root                    |
-| Tests       | 219 across 31 files                                       |
+| Tests       | 223 across 32 files                                       |
 | Coverage    | 42% statements / 37% branches / 40% functions / 43% lines |
 | Nuxt module | `nuxt-maptiler-gl` 2.0.1, published                       |
 
