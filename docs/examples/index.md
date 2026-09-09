@@ -1,6 +1,6 @@
 # Examples
 
-Explore practical, production-ready examples of vue3-maptiler-gl v5 components and composables in action.
+Explore practical, production-ready examples of vue3-maptiler-gl v2 components and composables in action.
 
 ## Quick Start
 

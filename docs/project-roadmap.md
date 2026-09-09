@@ -11,9 +11,10 @@ document that is wrong a month later.
 
 ## Current state
 
-**v1.0.1 is the published latest; v2.0.0 is prepared but not yet published.**
-v2.0.0 is the port onto the `vue3-maplibre-gl` v6 API, and it is breaking — see
-[the v1 → v2 migration guide](./guide/migration-v1-to-v2.md).
+**v2.0.1 is the published latest.** v2.0.0 was the port onto the
+`vue3-maplibre-gl` v6 API, and it is breaking — see
+[the v1 → v2 migration guide](./guide/migration-v1-to-v2.md). v2.0.1 changed
+only the npm landing-page READMEs.
 
 |             |                                                           |
 | ----------- | --------------------------------------------------------- |
@@ -21,7 +22,7 @@ v2.0.0 is the port onto the `vue3-maplibre-gl` v6 API, and it is breaking — se
 | Composables | 38, all exported from the package root                    |
 | Tests       | 219 across 31 files                                       |
 | Coverage    | 42% statements / 37% branches / 40% functions / 43% lines |
-| Nuxt module | `nuxt-maptiler-gl` 2.0.0, not yet published               |
+| Nuxt module | `nuxt-maptiler-gl` 2.0.1, published                       |
 
 Coverage is enforced as a ratchet in `vitest.config.ts`: every threshold is the
 number a file actually reached, so a change that lowers it fails CI. The global
@@ -33,9 +34,9 @@ at all — see Known gaps.
 Behavioural changes are documented for consumers in
 [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md). In short:
 
-- **Composables return refs.** v5 unwrapped its reactive state once in the
+- **Composables return refs.** v1 unwrapped its reactive state once in the
   return object, so every status a consumer read was frozen at setup. This is
-  the reason v6 is a major release.
+  the reason v2 is a major release.
 - **A post-load `error` no longer unmounts the map.** Any error used to be
   fatal, so a tile 404 tore down every child component.
 - **Camera calls settle on their own animation.** Calls shared the map's
@@ -57,7 +58,7 @@ Verified, not aspirational.
 ### Untested modules
 
 These have no test file. The layer composables are the largest hole — they carry
-the property-setter and lifecycle logic that the v6 fixes touched.
+the property-setter and lifecycle logic that the v2 fixes touched.
 
 | Area      | Modules                                                                                                        |
 | --------- | -------------------------------------------------------------------------------------------------------------- |

@@ -20,7 +20,7 @@ All composables follow the **factory pattern** for code reuse and maintainabilit
   `createSetStyle` and `createSetVisibility`
 
 Each factory holds the lifecycle and cleanup logic once, so a fix lands in
-every composable built on it — which is how the v6 camera and listener bugs
+every composable built on it — which is how the v2 camera and listener bugs
 were fixed in one place each.
 
 ## Map Management (3)

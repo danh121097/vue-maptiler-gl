@@ -233,7 +233,7 @@ export function useMyComposable(
 
   // Return public API. Return the reactive container itself — a `ComputedRef`
   // or the ref — never `status.value`. Unwrapping here type-checks and then
-  // freezes the field at its setup-time value, which is the bug v6 fixed.
+  // freezes the field at its setup-time value, which is the bug v2 fixed.
   return {
     startOperation,
     isActive,
@@ -250,7 +250,7 @@ interface UseMapTilerResult {
   mapInstance: ComputedRef<Map | null>;
   // State is returned as the reactive container, never unwrapped. Returning
   // `someRef.value` here type-checks against `boolean` and silently freezes
-  // the field at its setup-time value — the defect v6 exists to fix.
+  // the field at its setup-time value — the defect v2 exists to fix.
   isMapReady: ComputedRef<boolean>;
   isMapLoading: ComputedRef<boolean>;
   setCenter: (center: LngLatLike) => void;
@@ -264,7 +264,7 @@ export function useMapTiler(): UseMapTilerResult {
 ### Composable Options Pattern
 
 Some composables accept either a props object or positional arguments, kept for
-the pre-v5 call shape. Twelve carry them: `useZoomTo`, `useZoomIn`,
+the pre-v2 call shape. Twelve carry them: `useZoomTo`, `useZoomIn`,
 `useZoomOut`, `useRotateTo`, `useResetNorth`, `useResetNorthPitch`,
 `useSnapToNorth`, `usePanBy`, `usePanTo`, `useJumpTo`,
 `useFitScreenCoordinates` and `useMapReloadEvent`. Everything else — `useFlyTo`
@@ -491,7 +491,7 @@ watch(
 
 The package ships one shared rule in `style.css`, for `.maptiler-container`.
 There is no theming variable layer — do not document one until it exists.
-Since v6 this stylesheet carries only this package's rules; MapTiler's own
+Since v2 this stylesheet carries only this package's rules; MapTiler's own
 stylesheet is imported by the app.
 
 ### No Style Conflicts
@@ -565,7 +565,7 @@ A block that genuinely cannot compile can be opted out with an HTML comment on
 the line above its fence:
 
 ```md
-<!-- snippet-skip: quotes the v5 API on purpose -->
+<!-- snippet-skip: quotes the v1 API on purpose -->
 ```
 
 The reason is required, and a skipped block is the only documentation nothing
@@ -746,7 +746,7 @@ corrupted instead.
 
 The sweep found one more gap of its own. The attribute check anchored on
 `<template>`, but a `vue` fence that shows one line of markup writes the tag
-bare, and an `html` fence — the fence used for markup that cannot compile, a v5
+bare, and an `html` fence — the fence used for markup that cannot compile, a v1
 line kept for contrast — was not read at all. Five tags went unscanned. The
 check now blanks `<script>` blocks (which is what the `<template>` anchor was
 really for: `ref<Marker | null>` is a type argument, not a tag) and reads
@@ -977,14 +977,14 @@ Not currently implemented, but planned for future versions.
 ### Semantic Versioning
 
 - **Major** - Breaking API changes. A dependency moving to `peerDependencies`
-  counts, which is why v6 was a major.
+  counts, which is why v2 was a major.
 - **Minor** - New features, backward compatible
 - **Patch** - Bug fixes only
 
 ### Deprecation Policy
 
 - Prefer a deprecation cycle: warn in one major, remove in the next
-- v6 did not get one. The composable return types were wrong rather than
+- v2 did not get one. The composable return types were wrong rather than
   merely outdated — a status unwrapped at setup could not be deprecated into
   correctness, only replaced — so the break was immediate and documented in
   [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md) instead
