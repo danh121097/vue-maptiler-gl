@@ -5,8 +5,8 @@
 **vue3-maptiler-gl** is a comprehensive Vue 3 component library for MapTiler SDK with 10 components, 38 composables, full TypeScript support, and Nuxt integration.
 
 **Repository**: [danh121097/vue-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl)
-**Main Package**: `vue3-maptiler-gl@2.0.1` (npm)
-**Nuxt Module**: `nuxt-maptiler-gl@2.0.1` (npm)
+**Main Package**: `vue3-maptiler-gl@2.0.2` (npm)
+**Nuxt Module**: `nuxt-maptiler-gl@2.0.2` (npm)
 
 ## Directory Structure
 
@@ -91,7 +91,7 @@ vue-maptiler-gl/ (root)
 │   ├── style.css                  # Component styles (bundled)
 │   ├── index.ts                   # Main library export
 │   └── test-utils.ts              # Test utilities
-├── nuxt/                          # Nuxt module (v2.0.1)
+├── nuxt/                          # Nuxt module (v2.0.2)
 │   ├── src/
 │   │   ├── module.ts              # Nuxt module setup
 │   │   └── runtime/
@@ -123,6 +123,7 @@ vue-maptiler-gl/ (root)
 │   ├── public/                    # Static assets copied to dist root
 │   │   └── _headers               # Cloudflare Pages cache-control rules
 │   ├── index.md                   # Home page
+│   ├── changelog.md               # Release notes
 │   ├── api/                       # API reference
 │   │   ├── components.md          # Component API
 │   │   ├── composables.md         # Composable API
@@ -167,7 +168,7 @@ Measured, not estimated. Re-measure before quoting these anywhere public.
 | ----------------------- | -------------------------------- |
 | **Components**          | 10                               |
 | **Composables**         | 38                               |
-| **Unit Tests**          | 107 across 19 files              |
+| **Unit Tests**          | 224 across 32 files              |
 | **Documentation Pages** | 23 Markdown pages under `docs`   |
 | **Lines of Code**       | 11,153 in `libs`, tests excluded |
 
@@ -403,14 +404,14 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 **Main Package** (`libs/`):
 
 - **Name**: `vue3-maptiler-gl`
-- **Version**: `2.0.1`
+- **Version**: `2.0.2`
 - **Main**: `dist/index.js` (the package is ESM-only)
 - **Exports**: Named exports, subpaths for components/composables
 
 **Nuxt Module** (`nuxt/`):
 
 - **Name**: `nuxt-maptiler-gl`
-- **Version**: `2.0.1`
+- **Version**: `2.0.2`
 - **Auto-imports**: Components and composables
 - **Features**: CSS auto-inject, SSR support
 
@@ -422,7 +423,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **Configuration**: `vitest.config.ts`
 - **Test Files**: `__tests__/` directories
 
-### Test Coverage (223 tests across 32 files)
+### Test Coverage (224 tests across 32 files)
 
 - `create-event-listener-composable.test.ts` - Factory pattern tests
 - `create-layer-property-setters.test.ts` - Type preservation tests
@@ -437,6 +438,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **API Docs**: Component and composable references
 - **Guides**: Step-by-step tutorials
 - **Examples**: Runnable code examples
+- **Changelog**: Release notes for all versions
 
 ### Key Documentation Files
 
