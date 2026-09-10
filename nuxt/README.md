@@ -8,7 +8,7 @@
 
 - Auto-imports all 10 map components (MapTiler, GeoJsonSource, FillLayer, etc.)
 - Auto-imports all 38 composables (useFlyTo, useMapEventListener, etc.)
-- Auto-imports CSS — both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
+- Auto-imports CSS — `vue3-maptiler-gl/dist/style-with-maptiler.css`, which is the MapTiler SDK's own stylesheet plus the library's container rules
 - SSR-safe — components register client-only, `@maptiler/sdk` is kept out of the server bundle
 - Zero configuration required
 

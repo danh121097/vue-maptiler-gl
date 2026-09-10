@@ -492,7 +492,9 @@ watch(
 The package ships one shared rule in `style.css`, for `.maptiler-container`.
 There is no theming variable layer — do not document one until it exists.
 Since v2 this stylesheet carries only this package's rules; MapTiler's own
-stylesheet is imported by the app.
+stylesheet is imported by the app. `dist/style-with-maptiler.css` is generated
+from the two by a post-build step — build output, never a place to author
+rules.
 
 ### No Style Conflicts
 

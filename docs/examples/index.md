@@ -354,7 +354,7 @@ You can copy any example code and paste it into your Vue 3 project. All examples
 ### Map Not Showing
 
 - **Check**: Container has height (e.g., `style="height: 500px"`)
-- **Check**: both stylesheets are imported (`@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`)
+- **Check**: the stylesheets are imported — either `vue3-maptiler-gl/dist/style-with-maptiler.css` on its own, or both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
 - **Check**: MapOptions includes valid `style` URL
 
 ### Events Not Firing

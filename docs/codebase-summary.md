@@ -5,8 +5,8 @@
 **vue3-maptiler-gl** is a comprehensive Vue 3 component library for MapTiler SDK with 10 components, 38 composables, full TypeScript support, and Nuxt integration.
 
 **Repository**: [danh121097/vue-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl)
-**Main Package**: `vue3-maptiler-gl@2.0.2` (npm)
-**Nuxt Module**: `nuxt-maptiler-gl@2.0.2` (npm)
+**Main Package**: `vue3-maptiler-gl@2.1.0` (npm)
+**Nuxt Module**: `nuxt-maptiler-gl@2.1.0` (npm)
 
 ## Directory Structure
 
@@ -91,7 +91,7 @@ vue-maptiler-gl/ (root)
 │   ├── style.css                  # Component styles (bundled)
 │   ├── index.ts                   # Main library export
 │   └── test-utils.ts              # Test utilities
-├── nuxt/                          # Nuxt module (v2.0.2)
+├── nuxt/                          # Nuxt module (v2.1.0)
 │   ├── src/
 │   │   ├── module.ts              # Nuxt module setup
 │   │   └── runtime/
@@ -168,7 +168,7 @@ Measured, not estimated. Re-measure before quoting these anywhere public.
 | ----------------------- | -------------------------------- |
 | **Components**          | 10                               |
 | **Composables**         | 38                               |
-| **Unit Tests**          | 224 across 32 files              |
+| **Unit Tests**          | 233 across 34 files              |
 | **Documentation Pages** | 23 Markdown pages under `docs`   |
 | **Lines of Code**       | 11,153 in `libs`, tests excluded |
 
@@ -404,7 +404,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 **Main Package** (`libs/`):
 
 - **Name**: `vue3-maptiler-gl`
-- **Version**: `2.0.2`
+- **Version**: `2.1.0`
 - **Main**: `dist/index.js` (the package is ESM-only)
 - **Exports**: Named exports, subpaths for components/composables
 
@@ -423,7 +423,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 - **Configuration**: `vitest.config.ts`
 - **Test Files**: `__tests__/` directories
 
-### Test Coverage (224 tests across 32 files)
+### Test Coverage (233 tests across 34 files)
 
 - `create-event-listener-composable.test.ts` - Factory pattern tests
 - `create-layer-property-setters.test.ts` - Type preservation tests
@@ -484,6 +484,10 @@ counted here.
 | --------------- | ----- | ------- |
 | ES entry chunks | 13 KB | 2.2 KB  |
 | `style.css`     | 78 B  | —       |
+
+`style-with-maptiler.css` (103 KB raw) is the opt-in alternative to
+`style.css`: the same rules with the MapTiler SDK's own stylesheet prepended,
+so one import covers both. An app imports one or the other, never both.
 
 The build is split per module, so an app pays only for what it imports.
 

@@ -1,7 +1,9 @@
 // Styles are not imported here. MapTiler's own stylesheet is a peer concern:
 // consumers import '@maptiler/sdk/dist/maptiler-sdk.css' themselves, as MapTiler's
 // docs instruct. This package's own rules ship as
-// 'vue3-maptiler-gl/dist/style.css', the path the docs use throughout.
+// 'vue3-maptiler-gl/dist/style.css', the path the docs use throughout, and
+// 'vue3-maptiler-gl/dist/style-with-maptiler.css' is the two of them combined
+// for consumers who would rather import one file.
 
 // Export all composables
 export * from './composables';

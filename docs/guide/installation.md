@@ -10,10 +10,10 @@ Every command below installs two packages, because `@maptiler/sdk` is a peer dep
 This package re-exports MapTiler's own classes and types, and your app imports MapTiler's stylesheet directly. If both your app and this package resolved their own copy of `@maptiler/sdk`, a `Map` produced by one would fail an `instanceof` check in the other and two copies of the runtime would ship. Declaring it as a peer means there is exactly one, on a version you choose.
 :::
 
-Since v2 the two stylesheets are separate: this package ships only its own rules, and you import MapTiler's own stylesheet the way MapTiler documents it. See [Setup in Vue 3](#setup-in-vue-3).
+Since v2 the two stylesheets are separate: this package ships only its own rules, and you import MapTiler's own stylesheet the way MapTiler documents it. A combined `dist/style-with-maptiler.css` is published for apps that would rather import one file. See [Stylesheets](#stylesheets).
 
 ::: warning pnpm
-pnpm's isolated `node_modules` does not expose a dependency your app did not install itself, so `import '@maptiler/sdk/dist/maptiler-sdk.css'` fails unless `@maptiler/sdk` is in your own `package.json`. This has been true since v2 split the stylesheets, independently of the peer dependency.
+pnpm's isolated `node_modules` does not expose a dependency your app did not install itself, so `import '@maptiler/sdk/dist/maptiler-sdk.css'` fails unless `@maptiler/sdk` is in your own `package.json`. This has been true since v2 split the stylesheets, independently of the peer dependency. Importing [`vue3-maptiler-gl/dist/style-with-maptiler.css`](#stylesheets) sidesteps it, since that specifier resolves inside this package.
 :::
 
 ::: code-group
@@ -78,6 +78,33 @@ that names every dependency, or a bundler.
 Pin a major rather than `@latest`: an ESM CDN resolves the peer dependency for
 you, and `@latest` lets it resolve a different Vue than the page already has,
 which ends in two Vue runtimes and components that never mount.
+
+## Stylesheets
+
+The build externalises the MapTiler SDK entirely, so `dist/style.css` carries
+only this package's own rules — the map container's sizing. The SDK's controls,
+popups and markers are styled by the SDK's own stylesheet, and omitting it
+produces an unstyled map rather than an error.
+
+`dist/style-with-maptiler.css` is the SDK's stylesheet followed by this
+package's, so one import covers both:
+
+```js
+import 'vue3-maptiler-gl/dist/style-with-maptiler.css';
+```
+
+Import `dist/style.css` instead when your app already loads
+`@maptiler/sdk/dist/maptiler-sdk.css` — through another map library, a shared
+stylesheet, or a `<link>` tag — so that ~103KB is not shipped twice:
+
+```js
+import '@maptiler/sdk/dist/maptiler-sdk.css';
+import 'vue3-maptiler-gl/dist/style.css';
+```
+
+Never import both `style-with-maptiler.css` and `maptiler-sdk.css`; the second
+copy wins on identical rules and changes nothing, but it doubles the CSS
+payload.
 
 ## Setup in Vue 3
 
@@ -317,7 +344,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
 ### Common Issues
 
-1. **CSS not loading**: Make sure to import both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`
+1. **CSS not loading**: Import `vue3-maptiler-gl/dist/style-with-maptiler.css`, or both `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css`. See [Stylesheets](#stylesheets).
 2. **Module not found**: `@maptiler/sdk` is a peer dependency, so reinstalling this package will not supply it — install it in your own app (`bun add @maptiler/sdk`)
 3. **TypeScript errors**: Update your TypeScript configuration to include the package types
 
