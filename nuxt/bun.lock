@@ -7,7 +7,7 @@
       "dependencies": {
         "@maptiler/sdk": "^4.1.0",
         "@nuxt/kit": "^3.15.0",
-        "vue3-maptiler-gl": "^2.0.0",
+        "vue3-maptiler-gl": "^2.1.0",
       },
       "devDependencies": {
         "@nuxt/module-builder": "^1.0.2",
@@ -1428,7 +1428,7 @@
 
     "vue-sfc-transformer": ["vue-sfc-transformer@0.2.5", "", { "dependencies": { "@babel/parser": "^7.27.0", "pathe": "^2.0.3", "tinyglobby": "^0.2.16" }, "peerDependencies": { "@volar/typescript": "^2.4.0", "@vue/compiler-core": "^3.5.13", "@vue/language-core": "^3.0.0", "esbuild": "*", "rolldown": ">=1.0.0-beta.0", "typescript": ">=5.0.0", "vue": "^3.5.13" }, "optionalPeers": ["@volar/typescript", "@vue/language-core", "rolldown", "typescript"] }, "sha512-e+yWjXmWH/088bFrgpvVZ4x/4TkgRKM3L9yreSVlzphEy03auX7zgycyHFLEyCizMDmUh+Q2aXYRb3tjETtCyQ=="],
 
-    "vue3-maptiler-gl": ["vue3-maptiler-gl@2.0.2", "", { "peerDependencies": { "@maptiler/sdk": "^4.1.0", "vue": "^3.0.0" } }, "sha512-mzGj862PMTRHzLkrzMlvZ0JXKFGX6uogKCptur9nvkO0UNbDWuQ5S8vqQnRVNtNyqSo0ZEHtpKeUdIycEFttPw=="],
+    "vue3-maptiler-gl": ["vue3-maptiler-gl@2.1.1", "", { "peerDependencies": { "@maptiler/sdk": "^4.1.0", "vue": "^3.0.0" } }, "sha512-xonbR+UhLC+eWpg26waOxZcjn80TLbwV4uqGDL8zwyB+47Gjkrv8XZilkTaQxQlDfHYRahYs9ejCV7p3n/fALA=="],
 
     "webidl-conversions": ["webidl-conversions@3.0.1", "", {}, "sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ=="],
 
