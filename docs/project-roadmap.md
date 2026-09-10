@@ -11,11 +11,12 @@ document that is wrong a month later.
 
 ## Current state
 
-**v2.0.2 is the published latest.** v2.0.0 was the port onto the
+**v2.1.0 is the current version.** v2.0.0 was the port onto the
 `vue3-maplibre-gl` v6 API, and it is breaking — see
 [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md). v2.0.1 changed
 only the npm landing-page READMEs, and v2.0.2 only the package metadata and
-the docs site.
+the docs site. v2.1.0 adds the opt-in `dist/style-with-maptiler.css` and
+rebuilds layers after an in-place style diff; it is otherwise additive.
 
 |             |                                                           |
 | ----------- | --------------------------------------------------------- |
@@ -23,7 +24,7 @@ the docs site.
 | Composables | 38, all exported from the package root                    |
 | Tests       | 233 across 34 files                                       |
 | Coverage    | 42% statements / 37% branches / 40% functions / 43% lines |
-| Nuxt module | `nuxt-maptiler-gl` 2.0.2, published                       |
+| Nuxt module | `nuxt-maptiler-gl` 2.1.0                                  |
 
 Coverage is enforced as a ratchet in `vitest.config.ts`: every threshold is the
 number a file actually reached, so a change that lowers it fails CI. The global

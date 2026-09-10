@@ -5,8 +5,8 @@
 **vue3-maptiler-gl** is a comprehensive Vue 3 component library for MapTiler SDK with 10 components, 38 composables, full TypeScript support, and Nuxt integration.
 
 **Repository**: [danh121097/vue-maptiler-gl](https://github.com/danh121097/vue-maptiler-gl)
-**Main Package**: `vue3-maptiler-gl@2.0.2` (npm)
-**Nuxt Module**: `nuxt-maptiler-gl@2.0.2` (npm)
+**Main Package**: `vue3-maptiler-gl@2.1.0` (npm)
+**Nuxt Module**: `nuxt-maptiler-gl@2.1.0` (npm)
 
 ## Directory Structure
 
@@ -91,7 +91,7 @@ vue-maptiler-gl/ (root)
 │   ├── style.css                  # Component styles (bundled)
 │   ├── index.ts                   # Main library export
 │   └── test-utils.ts              # Test utilities
-├── nuxt/                          # Nuxt module (v2.0.2)
+├── nuxt/                          # Nuxt module (v2.1.0)
 │   ├── src/
 │   │   ├── module.ts              # Nuxt module setup
 │   │   └── runtime/
@@ -404,7 +404,7 @@ export type GeolocateHandler = (e: GeolocateSuccess) => void;
 **Main Package** (`libs/`):
 
 - **Name**: `vue3-maptiler-gl`
-- **Version**: `2.0.2`
+- **Version**: `2.1.0`
 - **Main**: `dist/index.js` (the package is ESM-only)
 - **Exports**: Named exports, subpaths for components/composables
 

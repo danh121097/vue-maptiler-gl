@@ -14,7 +14,7 @@ Empower Vue 3 developers to build high-performance, interactive maps with minima
 - **Framework integration** - First-class Nuxt support with SSR out of the box
 - **Zero performance compromise** - Optimized bundle size, memory management, and rendering
 
-## Current Release: v2.0.2
+## Current Release: v2.1.0
 
 ### Release Summary
 
@@ -25,8 +25,12 @@ so a consumer reading a status sees it change; `@maptiler/sdk` moved to
 `peerDependencies`; and the package stopped shipping a stylesheet of its own
 that consumers had not asked for. **v2.0.1** changed only the npm landing-page READMEs, and
 **v2.0.2** only the package metadata and the docs site; neither touched the
-API, and 2.0.2 ships a `dist/` byte-identical to 2.0.1. npm carries 1.0.0,
-1.0.1, 2.0.0, 2.0.1 and 2.0.2.
+API, and 2.0.2 ships a `dist/` byte-identical to 2.0.1. **v2.1.0** adds
+`dist/style-with-maptiler.css`, an opt-in stylesheet carrying the SDK's rules
+alongside this package's, and rebuilds layers and sources after an in-place
+style diff, which `map.setStyle` takes by default — before it, a style switch
+left them off the map. npm carries 1.0.0, 1.0.1, 2.0.0, 2.0.1, 2.0.2 and
+2.1.0.
 
 Consumer-facing detail is in [the v1 → v2 migration guide](./guide/migration-v1-to-v2.md),
 which folds that whole history into the one upgrade this package's users actually make.
