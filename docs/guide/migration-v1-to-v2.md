@@ -26,6 +26,8 @@ import 'vue3-maptiler-gl/dist/style.css';
 
 Miss the first and controls, markers and popups render unstyled. The `vue3-maptiler-gl/style.css` export subpath still resolves, so an existing import of it keeps working.
 
+If you preferred a single import, `vue3-maptiler-gl/dist/style-with-maptiler.css` is the two of them combined, published as its own file. The difference from v1 is that it is opt-in: apps that already load the SDK's stylesheet keep the split imports and never pay for the second copy. See [Stylesheets](/guide/installation#stylesheets).
+
 <!-- names-skip: a v1 export this page exists to say was removed -->
 
 ## 2. `useOptimizedComputed` is gone

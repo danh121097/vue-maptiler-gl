@@ -151,7 +151,7 @@ const DIVERGENCES = new Map<string, { hash: string; reason: string }>([
   [
     'libs/index.ts',
     {
-      hash: 'c35e926739b444ab1abe22e0381e9b984707537ed43da955e46111f09691746d',
+      hash: '6008184a21bc504f9e3f9ee1520901e59382303877ebfaf2e0249012ff960a6b',
       reason:
         'D10: the rename map sends two distinct upstream names to one target ' +
         'name. The enums union keeps MapTilerEvent, so the SDK generic event ' +

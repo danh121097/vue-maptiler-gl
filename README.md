@@ -51,12 +51,13 @@ yarn add vue3-maptiler-gl @maptiler/sdk
 pnpm add vue3-maptiler-gl @maptiler/sdk
 ```
 
-Both stylesheets are required and neither is imported for you — importing CSS as a side effect of importing a component would defeat tree-shaking. Do this once, at your application entry; skip the first and controls, markers and popups render unstyled.
+Styles are required and are not imported for you — importing CSS as a side effect of importing a component would defeat tree-shaking. Do this once, at your application entry. `style-with-maptiler.css` is the SDK's stylesheet plus this package's own rules, so one import covers both:
 
 ```ts
-import '@maptiler/sdk/dist/maptiler-sdk.css';
-import 'vue3-maptiler-gl/dist/style.css';
+import 'vue3-maptiler-gl/dist/style-with-maptiler.css';
 ```
+
+Apps that already load `@maptiler/sdk/dist/maptiler-sdk.css` should import `vue3-maptiler-gl/dist/style.css` alongside it instead, rather than shipping the SDK's CSS twice.
 
 > **ESM only.** `@maptiler/sdk` ships an ES module and nothing else — its `exports` map offers a single `"import"` condition and no browser global — so this package ships no UMD build and cannot be loaded from a plain `<script>` tag. See [Installation](https://vue-maptiler-gl.pages.dev/guide/installation) for a CDN setup that works.
 
@@ -100,8 +101,7 @@ import {
   Popup,
   GeolocateControls,
 } from 'vue3-maptiler-gl';
-import '@maptiler/sdk/dist/maptiler-sdk.css';
-import 'vue3-maptiler-gl/dist/style.css';
+import 'vue3-maptiler-gl/dist/style-with-maptiler.css';
 
 const mapOptions = ref({
   style: 'https://demotiles.maplibre.org/style.json',

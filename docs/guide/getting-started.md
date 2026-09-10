@@ -53,14 +53,22 @@ pnpm add vue3-maptiler-gl @maptiler/sdk
 
 ## Import Styles
 
-Don't forget to import the CSS:
+Don't forget to import the CSS. One file covers both this package and the
+MapTiler SDK:
+
+```js
+import 'vue3-maptiler-gl/dist/style-with-maptiler.css';
+```
+
+If your app already imports the SDK's stylesheet elsewhere, import this
+package's own rules instead so the SDK's CSS is not shipped twice:
 
 ```js
 import '@maptiler/sdk/dist/maptiler-sdk.css';
 import 'vue3-maptiler-gl/dist/style.css';
 ```
 
-You can import this in your main.js file or in individual components.
+You can import either in your main.js file or in individual components.
 
 ## Basic Usage
 

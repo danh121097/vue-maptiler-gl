@@ -42,7 +42,7 @@ which folds that whole history into the one upgrade this package's users actuall
 | **Correctness**   | v2 fixed reactive status, camera promise settlement, listener attachment ordering, and post-load error recovery  |
 | **SSR Support**   | Full Nuxt SSR/SSG compatibility with browser guards                                                              |
 | **Nuxt Module**   | nuxt-maptiler-gl v2.0.2, auto-importing all 38 composables                                                       |
-| **Testing**       | 224 tests across 32 files, with a coverage ratchet in CI                                                         |
+| **Testing**       | 228 tests across 33 files, with a coverage ratchet in CI                                                         |
 | **Documentation** | VitePress docs with API reference, guides, and examples                                                          |
 
 ## Feature Set
@@ -222,6 +222,8 @@ MapTiler (Root Provider)
 - **TypeScript Declarations** - Full type support
 - **CSS** - `dist/style.css`, this package's own rules only. MapTiler's own
   stylesheet is imported separately, the way MapTiler documents it.
+  `dist/style-with-maptiler.css` is the opt-in combination of the two, for
+  apps that would rather import one file than two.
 
 ### Package Size
 
@@ -233,6 +235,10 @@ dependency, so it is never bundled in these numbers.
 | ES entry chunks | 13 KB | 2.2 KB  |
 | `style.css`     | 78 B  | —       |
 
+`style-with-maptiler.css` is 103 KB raw: `style.css` plus the SDK's own
+stylesheet verbatim. It is an alternative to `style.css`, never an addition, so
+only one of the two is ever in an app's bundle.
+
 The build is split per module and tree-shakeable, so an app pays for the
 components and composables it imports rather than the figure above.
 
@@ -241,7 +247,7 @@ components and composables it imports rather than the figure above.
 ### Code Quality
 
 - **Framework**: TypeScript with strict mode
-- **Testing**: vitest, 224 tests across 32 files, with a coverage ratchet
+- **Testing**: vitest, 228 tests across 33 files, with a coverage ratchet
 - **Linting**: ESLint with Vue 3 plugin
 - **Formatting**: Prettier with consistent style
 
@@ -268,7 +274,7 @@ gone rather than restated.
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
 | Components     | 10                                                        | `libs/components`                                                    |
 | Composables    | 38                                                        | exported from the package root, all auto-imported by the Nuxt module |
-| Tests          | 32 test files                                             | `bun run test`                                                       |
+| Tests          | 33 test files                                             | `bun run test`                                                       |
 | Coverage floor | 39% statements / 34% branches / 37% functions / 40% lines | ratchet in `vitest.config.ts`; CI fails if it drops                  |
 | Type safety    | strict TypeScript, types generated on build               | `tsconfig.json`, `bun run build`                                     |
 

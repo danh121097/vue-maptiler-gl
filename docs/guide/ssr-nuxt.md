@@ -64,7 +64,7 @@ export default defineNuxtConfig({
 
 The module automatically configures:
 
-1. **CSS Auto-Import** - `@maptiler/sdk/dist/maptiler-sdk.css` and `vue3-maptiler-gl/dist/style.css` injected
+1. **CSS Auto-Import** - `vue3-maptiler-gl/dist/style-with-maptiler.css` injected, which carries the SDK's own rules and the library's
 2. **Component Auto-Import** - All 10 components available without imports
 3. **Composable Auto-Import** - All 38 composables available without imports
 4. **SSR Support** - Map components rendered only on client
@@ -236,10 +236,7 @@ pnpm add vue3-maptiler-gl @maptiler/sdk
 ```typescript
 // nuxt.config.ts
 export default defineNuxtConfig({
-  css: [
-    '@maptiler/sdk/dist/maptiler-sdk.css',
-    'vue3-maptiler-gl/dist/style.css',
-  ],
+  css: ['vue3-maptiler-gl/dist/style-with-maptiler.css'],
   build: {
     transpile: ['vue3-maptiler-gl'],
   },
